@@ -1,0 +1,1597 @@
+DISC GOLF THROW ANALYSIS APP
+
+MASTER IMPLEMENTATION PROMPT
+
+Build the complete model-ready analysis architecture now. Credentials come later.
+
+You are the lead senior computer-vision, biomechanics, machine-learning, and full-stack engineer for this project.
+
+Your job is to IMPLEMENT the complete disc-golf throw analysis system inside the existing app.
+
+Do NOT merely describe what should be built.
+
+Inspect the existing codebase first, understand its current architecture, then implement the system while preserving existing functionality.
+
+The final architecture must allow me to add API keys, model files, GPU endpoints, or provider credentials later without redesigning the application.
+
+---
+
+1. CORE PRODUCT
+
+The application analyzes a disc-golf player's throwing mechanics from video.
+
+A user records or uploads a throw.
+
+The system must:
+
+1. Import video.
+2. Validate video quality.
+3. Determine throwing direction/type when possible.
+4. Detect the athlete.
+5. Track the athlete through the complete throw.
+6. Extract body landmarks.
+7. Analyze movement frame-by-frame.
+8. Detect throw phases.
+9. Calculate biomechanical measurements.
+10. Analyze sequencing and timing.
+11. Analyze the throwing arm.
+12. Analyze lower-body mechanics.
+13. Analyze torso rotation.
+14. Analyze plant/bracing mechanics.
+15. Analyze release mechanics.
+16. Analyze disc motion when detectable.
+17. Compare the measurements against professional reference data.
+18. Identify the largest meaningful differences.
+19. Produce prioritized coaching feedback.
+20. Show the user exactly what was detected and how confident the system is.
+21. Allow the user to rethrow and measure improvement over time.
+
+The system must NEVER invent measurements.
+
+---
+
+2. MODEL ARCHITECTURE
+
+Implement the application as a provider/model-agnostic architecture.
+
+Create a unified internal interface for every AI/CV component.
+
+The application must NOT be tightly coupled to one provider.
+
+Use adapters such as:
+
+PoseEstimator
+3DPoseEstimator
+PersonDetector
+HandDetector
+DiscDetector
+ThrowPhaseDetector
+MotionAnalyzer
+BiomechanicsEngine
+ReferenceComparisonEngine
+CoachingEngine
+
+Every implementation must conform to the appropriate interface.
+
+Example:
+
+PoseEstimator
+ ├── MediaPipePoseAdapter
+ ├── RTMPoseAdapter
+ ├── MMPoseAdapter
+ └── FuturePoseProviderAdapter
+
+The application should be able to switch implementations through configuration.
+
+---
+
+3. PRIMARY OPEN-SOURCE COMPUTER VISION STACK
+
+Build support for the following open-source technologies.
+
+A. MediaPipe
+
+Implement MediaPipe Pose as the lightweight/mobile/local fallback.
+
+Purpose:
+
+- fast pose estimation
+- 33 body landmarks
+- real-time processing
+- mobile-friendly processing
+- initial analysis
+- low-compute mode
+
+Create:
+
+MediaPipePoseAdapter
+
+Do not hard-code MediaPipe directly into the rest of the application.
+
+---
+
+4. MMPOSE / RTMPOSE
+
+Implement MMPose/RTMPose as the high-quality pose-analysis backend.
+
+Primary purpose:
+
+- high-quality human pose estimation
+- improved keypoint detection
+- detailed pose analysis
+- higher-quality uploaded-video analysis
+- future whole-body models
+- future multi-person support
+
+Create:
+
+MMPoseAdapter
+RTMPoseAdapter
+
+The architecture should allow RTMPose to run:
+
+1. Locally.
+2. Through a local Python service.
+3. Through a remote GPU endpoint.
+4. Through a future hosted API.
+
+Do not require any specific deployment method.
+
+Configuration example:
+
+POSE_PROVIDER=rtmpose
+POSE_MODE=remote
+POSE_ENDPOINT=
+POSE_API_KEY=
+POSE_MODEL=
+
+If no endpoint/key/model exists, the system must clearly report:
+
+RTMPose provider configured but credentials/model endpoint unavailable.
+
+Never fake the result.
+
+---
+
+5. 3D ANALYSIS
+
+Implement support for Pose2Sim.
+
+Purpose:
+
+Convert 2D pose data into usable 3D kinematic information when sufficient camera information exists.
+
+Create:
+
+Pose2SimAdapter
+
+Support:
+
+- multiple synchronized cameras
+- camera calibration
+- 2D keypoints
+- triangulation
+- 3D skeleton generation
+- kinematic output
+- OpenSim compatibility
+
+The system must distinguish between:
+
+2D measured
+3D reconstructed
+3D estimated
+3D unavailable
+
+Never present monocular estimates as verified 3D measurements.
+
+---
+
+6. OPENSIM SUPPORT
+
+Create an OpenSim integration layer.
+
+Purpose:
+
+- advanced kinematic analysis
+- joint movement
+- biomechanical modeling
+- future musculoskeletal analysis
+- advanced professional analysis
+
+Create:
+
+OpenSimAdapter
+
+OpenSim must be optional.
+
+The app must work without OpenSim.
+
+If OpenSim is unavailable, continue with the standard biomechanics engine.
+
+Configuration:
+
+OPENSIM_ENABLED=false
+OPENSIM_ENDPOINT=
+OPENSIM_MODEL=
+
+---
+
+7. OPENCV + FFMPEG
+
+Implement OpenCV and FFmpeg processing.
+
+The video pipeline must support:
+
+- MP4
+- MOV
+- WebM
+- common phone camera formats
+
+Extract:
+
+- FPS
+- resolution
+- duration
+- frame count
+- codec
+- timestamps
+
+Use FFmpeg for:
+
+- decoding
+- frame extraction
+- transcoding
+- normalization
+- frame-rate conversion
+- video preprocessing
+
+Use OpenCV for:
+
+- frame operations
+- image processing
+- tracking support
+- motion analysis
+
+---
+
+8. BODY LANDMARK DATA MODEL
+
+Create a normalized internal landmark format.
+
+At minimum support:
+
+nose
+left_eye
+right_eye
+left_ear
+right_ear
+
+left_shoulder
+right_shoulder
+
+left_elbow
+right_elbow
+
+left_wrist
+right_wrist
+
+left_hip
+right_hip
+
+left_knee
+right_knee
+
+left_ankle
+right_ankle
+
+left_heel
+right_heel
+
+left_foot
+right_foot
+
+Allow additional keypoints from higher-detail models.
+
+Every landmark must contain:
+
+{
+  "x": 0,
+  "y": 0,
+  "z": null,
+  "confidence": 0,
+  "visibility": 0,
+  "timestamp": 0,
+  "frame_index": 0
+}
+
+Do not discard confidence information.
+
+---
+
+9. THROW TYPE DETECTION
+
+Support:
+
+RHBH
+LHBH
+RHFH
+LHFH
+
+Also support:
+
+standstill
+one-step
+x-step
+approach
+drive
+putt
+
+Future-compatible categories:
+
+roller
+tomahawk
+thumber
+grenade
+other
+unknown
+
+If the system cannot confidently determine the throw type:
+
+throw_type = unknown
+
+Do not guess.
+
+---
+
+10. THROW PHASE DETECTION
+
+Create a dedicated phase-detection system.
+
+Detect:
+
+setup
+initial movement
+x-step / approach
+plant preparation
+plant
+reachback
+peak reachback
+hip rotation
+shoulder rotation
+forward swing
+arm acceleration
+elbow extension
+wrist action
+release
+follow-through
+deceleration
+finish
+
+Store exact frame/time boundaries.
+
+Example:
+
+{
+  "phase": "peak_reachback",
+  "start_frame": 118,
+  "end_frame": 123,
+  "peak_frame": 121,
+  "confidence": 0.91
+}
+
+---
+
+11. BIOMECHANICS ENGINE
+
+Create a dedicated deterministic biomechanics engine.
+
+This engine must use mathematical calculations from pose data.
+
+It must NOT use an LLM to calculate measurements.
+
+Implement calculations for:
+
+Lower body
+
+- plant-foot position
+- plant-foot angle
+- plant-foot stability
+- knee angle
+- hip angle
+- pelvis rotation
+- center-of-mass approximation
+- weight-transfer timing
+- stride length
+- x-step spacing
+- plant timing
+- bracing timing
+- knee collapse
+- rear-leg contribution
+- front-leg contribution
+
+Torso
+
+- spine angle
+- shoulder angle
+- hip angle
+- shoulder-hip separation
+- torso rotation
+- torso rotation velocity
+- sequencing timing
+- posture changes
+
+Throwing arm
+
+- shoulder angle
+- elbow angle
+- wrist position
+- reachback distance
+- reachback height
+- elbow position
+- elbow extension timing
+- arm acceleration
+- arm path
+- release position
+- follow-through path
+
+Release
+
+Where technically measurable:
+
+- release frame
+- release height
+- release angle
+- launch direction
+- body orientation
+- shoulder orientation
+- wrist orientation
+- disc orientation
+- estimated nose angle
+- estimated hyzer/anhyzer angle
+
+Clearly classify uncertain values.
+
+---
+
+12. MEASUREMENT STATUS
+
+Every measurement must have one of these states:
+
+MEASURED
+ESTIMATED
+INFERRED
+UNAVAILABLE
+INVALID
+
+Example:
+
+{
+  "metric": "shoulder_hip_separation",
+  "value": 47.2,
+  "unit": "degrees",
+  "status": "MEASURED",
+  "confidence": 0.94
+}
+
+For unavailable information:
+
+{
+  "metric": "disc_spin",
+  "value": null,
+  "status": "UNAVAILABLE",
+  "reason": "Video does not provide sufficient visual information."
+}
+
+Never substitute fabricated numbers.
+
+---
+
+13. CONFIDENCE ENGINE
+
+Create a confidence system for:
+
+- video quality
+- body detection
+- landmark confidence
+- phase detection
+- metric confidence
+- throw classification
+- disc detection
+- comparison confidence
+
+Overall analysis confidence must be calculated from the underlying evidence.
+
+Do not let an LLM decide confidence.
+
+---
+
+14. VIDEO QUALITY ANALYSIS
+
+Before analyzing a throw, inspect:
+
+- resolution
+- FPS
+- camera angle
+- athlete visibility
+- lighting
+- motion blur
+- occlusion
+- camera movement
+- distance
+- cropping
+- frame consistency
+
+Return:
+
+GOOD
+ACCEPTABLE
+POOR
+INVALID
+
+If the video cannot produce reliable analysis, explain exactly why.
+
+Example:
+
+Analysis blocked.
+
+Reason:
+The throwing arm is hidden for 37% of the forward swing.
+
+---
+
+15. DISC DETECTION
+
+Create a separate:
+
+DiscDetector
+
+It should support future models.
+
+Possible implementations:
+
+OpenCVDiscDetector
+YOLODiscDetector
+CustomDiscDetector
+RemoteDiscDetector
+
+The system must support:
+
+- disc location
+- disc visibility
+- release location
+- trajectory tracking
+- orientation when visible
+- flight path
+
+Disc spin should remain unavailable unless actual evidence exists.
+
+---
+
+16. PROFESSIONAL DATABASE
+
+Create the data model for professional players.
+
+Do NOT scrape copyrighted/protected data blindly.
+
+Create a provenance system.
+
+Each professional reference record must contain:
+
+player
+throw_type
+camera_angle
+video_source
+source_url
+license_status
+capture_conditions
+frame_rate
+resolution
+analysis_version
+metrics
+confidence
+
+Every professional measurement must have provenance.
+
+Create support for:
+
+ProfessionalThrow
+ProfessionalMetric
+ProfessionalReferenceDistribution
+PlayerProfile
+ThrowSignature
+
+---
+
+17. PROFESSIONAL REFERENCE MODEL
+
+Do NOT simply compare the user against one professional.
+
+Create reference distributions.
+
+Example:
+
+Metric:
+Shoulder-Hip Separation
+
+Professional Reference:
+median = 42°
+p25 = 35°
+p75 = 49°
+sample_size = 147
+
+Store:
+
+mean
+median
+standard deviation
+percentiles
+min
+max
+sample count
+confidence
+
+This prevents the application from telling every player to copy one person's throwing style.
+
+---
+
+18. THROW DNA
+
+Create a user's biomechanical profile.
+
+Example:
+
+Throw DNA
+
+Lower-body sequencing
+Hip rotation
+Shoulder separation
+Reachback
+Plant mechanics
+Elbow sequencing
+Release timing
+Follow-through
+Consistency
+
+Store historical measurements.
+
+Allow:
+
+Throw #1
+Throw #2
+Throw #3
+Average
+Best
+Consistency
+Trend
+
+---
+
+19. COMPARISON ENGINE
+
+Create:
+
+ReferenceComparisonEngine
+
+For each metric calculate:
+
+user value
+professional reference
+difference
+percentile
+confidence
+
+Example:
+
+{
+  "metric": "plant_timing",
+  "user": 0.184,
+  "professional_median": 0.151,
+  "difference": 0.033,
+  "unit": "seconds",
+  "confidence": 0.89
+}
+
+Do not label something "bad" merely because it differs.
+
+Some differences may represent legitimate individual technique.
+
+---
+
+20. COACHING ENGINE
+
+Create:
+
+CoachingEngine
+
+The coaching engine should identify:
+
+1. Primary correction.
+2. Secondary correction.
+3. What the player is already doing consistently.
+4. What changed from previous throws.
+5. What to practice.
+
+Never overwhelm the user with twenty corrections.
+
+Prioritize corrections based on:
+
+confidence
+magnitude of deviation
+sequencing importance
+downstream impact
+repeatability
+
+---
+
+21. LLM INTEGRATION
+
+Create an LLM adapter.
+
+Possible providers:
+
+OpenAI
+Grok
+Gemini
+Local LLM
+Future provider
+
+Create:
+
+LLMProvider
+
+The LLM receives STRUCTURED ANALYSIS ONLY.
+
+Example:
+
+{
+  "throw_type": "RHBH",
+  "metrics": {},
+  "phase_timing": {},
+  "comparison": {},
+  "confidence": {},
+  "recommended_correction": {}
+}
+
+The LLM must NEVER receive authority to invent raw measurements.
+
+Prompt it to explain existing analysis in plain language.
+
+---
+
+22. PROVIDER CONFIGURATION
+
+Create a central configuration system.
+
+Example:
+
+POSE_PROVIDER=mediapipe
+POSE_ENDPOINT=
+POSE_API_KEY=
+
+THREE_D_PROVIDER=pose2sim
+THREE_D_ENDPOINT=
+THREE_D_API_KEY=
+
+BIOMECHANICS_PROVIDER=local
+
+LLM_PROVIDER=
+LLM_ENDPOINT=
+LLM_API_KEY=
+
+DISC_PROVIDER=
+DISC_ENDPOINT=
+DISC_API_KEY=
+
+OPENSIM_ENABLED=false
+OPENSIM_ENDPOINT=
+
+The app must function in local/demo mode when keys are missing.
+
+But it must clearly distinguish:
+
+REAL ANALYSIS
+DEMO ANALYSIS
+PROVIDER UNAVAILABLE
+
+Never pretend demo output is real analysis.
+
+---
+
+23. API ABSTRACTION
+
+All external providers must be accessed through adapters.
+
+BAD:
+
+UI → OpenAI
+UI → Gemini
+UI → MMPose
+
+GOOD:
+
+UI
+ ↓
+AnalysisService
+ ↓
+Provider Interfaces
+ ↓
+Provider Adapters
+ ↓
+Actual Models/APIs
+
+This is mandatory.
+
+---
+
+24. ANALYSIS PIPELINE
+
+Implement this exact conceptual pipeline:
+
+VIDEO
+ ↓
+VideoValidator
+ ↓
+VideoQualityAnalyzer
+ ↓
+PersonDetector
+ ↓
+PoseEstimator
+ ↓
+LandmarkNormalizer
+ ↓
+TemporalSmoother
+ ↓
+ThrowClassifier
+ ↓
+PhaseDetector
+ ↓
+BiomechanicsEngine
+ ↓
+DiscDetector
+ ↓
+3D Reconstruction (if available)
+ ↓
+OpenSim (optional)
+ ↓
+ProfessionalReferenceDatabase
+ ↓
+ReferenceComparisonEngine
+ ↓
+CoachingEngine
+ ↓
+StructuredAnalysis
+ ↓
+LLM Explanation
+ ↓
+USER RESULTS
+
+Every stage must be independently testable.
+
+---
+
+25. LOCAL-FIRST OPERATION
+
+The application must be designed to work without paid APIs wherever possible.
+
+If a model can run locally:
+
+Prefer local execution.
+
+Examples:
+
+MediaPipe
+OpenCV
+FFmpeg
+MMPose
+RTMPose
+Pose2Sim
+OpenSim
+NumPy
+SciPy
+
+Remote APIs should be optional acceleration/providers, not architectural requirements.
+
+---
+
+26. GPU SUPPORT
+
+Design the backend so heavy models can run on:
+
+CPU
+CUDA GPU
+remote GPU server
+cloud inference endpoint
+
+Do not hard-code NVIDIA-specific assumptions into the application.
+
+Detect available hardware.
+
+Example:
+
+compute_device:
+CPU
+CUDA
+REMOTE
+
+---
+
+27. MOBILE ARCHITECTURE
+
+If the application has an Android client:
+
+The Android application should not contain huge Python ML dependencies unless technically appropriate.
+
+Use:
+
+Android
+ ↓
+Video capture/upload
+ ↓
+Analysis API
+ ↓
+Python CV service
+
+For lightweight real-time analysis:
+
+Android
+ ↓
+MediaPipe
+ ↓
+Immediate feedback
+
+For deep analysis:
+
+Android
+ ↓
+Backend
+ ↓
+RTMPose/MMPose
+ ↓
+Pose2Sim
+ ↓
+Biomechanics
+
+---
+
+28. DATA STORAGE
+
+Create schemas for:
+
+User
+Throw
+Video
+Analysis
+Frame
+Landmark
+Metric
+Phase
+ProfessionalPlayer
+ProfessionalThrow
+ReferenceDistribution
+CoachingResult
+AnalysisVersion
+ProviderRun
+
+Every analysis should be reproducible.
+
+Store:
+
+model version
+provider
+configuration
+analysis version
+timestamp
+video metadata
+confidence
+
+---
+
+29. VERSIONING
+
+Every analysis must have:
+
+analysis_version
+pose_model_version
+biomechanics_version
+comparison_version
+coaching_version
+
+If the algorithms improve later, old analyses must remain identifiable.
+
+---
+
+30. VISUAL RESULTS
+
+Build a useful analysis interface.
+
+Show:
+
+Video
+
+Original video with:
+
+- skeleton overlay
+- joint markers
+- phase markers
+- release marker
+- optional disc tracking
+
+Timeline
+
+Setup
+   ↓
+X-step
+   ↓
+Plant
+   ↓
+Reachback
+   ↓
+Rotation
+   ↓
+Acceleration
+   ↓
+Release
+   ↓
+Follow-through
+
+Metrics
+
+Show:
+
+Metric
+Your Value
+Pro Reference
+Difference
+Confidence
+
+Coaching
+
+Show:
+
+PRIMARY CORRECTION
+
+SECONDARY CORRECTION
+
+WHAT YOU ARE DOING WELL
+
+NEXT PRACTICE
+
+---
+
+31. FRAME-BY-FRAME INSPECTION
+
+Allow the user to scrub frame-by-frame.
+
+Display:
+
+- skeleton
+- landmarks
+- joint angles
+- phase
+- release timing
+- relevant metrics
+
+This is essential for trust.
+
+---
+
+32. ERROR HANDLING
+
+Every provider must have explicit errors.
+
+Examples:
+
+MODEL_NOT_AVAILABLE
+PROVIDER_UNAVAILABLE
+INVALID_VIDEO
+LOW_VIDEO_QUALITY
+INSUFFICIENT_LANDMARK_CONFIDENCE
+THROW_NOT_DETECTED
+THROW_TYPE_UNKNOWN
+THREE_D_UNAVAILABLE
+DISC_NOT_DETECTED
+ANALYSIS_TIMEOUT
+MODEL_LOAD_FAILED
+
+Never silently substitute fake data.
+
+---
+
+33. FALLBACK SYSTEM
+
+Implement:
+
+RTMPose
+ ↓ unavailable
+MMPose
+ ↓ unavailable
+MediaPipe
+ ↓ unavailable
+Analysis unavailable
+
+But do NOT silently switch to a lower-quality provider without recording that fallback.
+
+Example:
+
+{
+  "requested_provider": "rtmpose",
+  "actual_provider": "mediapipe",
+  "fallback": true
+}
+
+---
+
+34. TESTING
+
+Create automated tests for:
+
+Video
+
+- valid video
+- corrupt video
+- low FPS
+- low resolution
+- missing frames
+
+Pose
+
+- full body visible
+- partial occlusion
+- multiple people
+- poor lighting
+
+Throw
+
+- RHBH
+- LHBH
+- RHFH
+- LHFH
+- standstill
+- x-step
+
+Metrics
+
+Verify mathematical calculations with known synthetic data.
+
+Provider failures
+
+Simulate:
+
+- API timeout
+- invalid key
+- unavailable model
+- malformed response
+- rate limit
+
+Comparison
+
+Test professional reference distributions.
+
+Coaching
+
+Verify deterministic prioritization.
+
+---
+
+35. SYNTHETIC TEST MODE
+
+Create a synthetic pose generator.
+
+This allows testing the biomechanics engine without requiring real videos.
+
+Generate known:
+
+joint positions
+angles
+rotations
+timings
+
+Then verify that the calculated metrics match expected values.
+
+This is critical.
+
+---
+
+36. NO FAKE AI
+
+This rule overrides everything else.
+
+Never create fake:
+
+- pose data
+- professional measurements
+- disc speed
+- spin
+- release angle
+- 3D data
+- biomechanical values
+- AI confidence
+
+If unavailable:
+
+UNAVAILABLE
+
+If estimated:
+
+ESTIMATED
+
+If inferred:
+
+INFERRED
+
+The user must always know the difference.
+
+---
+
+37. PRIVACY
+
+User videos are potentially sensitive.
+
+Implement:
+
+- secure upload
+- authenticated analysis
+- deletion support
+- configurable retention
+- no unnecessary video duplication
+- no public URLs by default
+
+Do not expose raw videos through predictable URLs.
+
+---
+
+38. PERFORMANCE
+
+Use:
+
+- asynchronous processing
+- job queues where appropriate
+- frame sampling
+- batching
+- caching
+- model reuse
+- GPU acceleration when available
+
+Do not load a large ML model separately for every frame.
+
+---
+
+39. ARCHITECTURE DOCUMENTATION
+
+Create:
+
+ARCHITECTURE.md
+MODELS.md
+BIOMECHANICS.md
+API.md
+PROVIDERS.md
+DATA_MODEL.md
+TESTING.md
+
+Document exactly how to activate each model later.
+
+---
+
+40. ONE-CONFIGURATION ACTIVATION
+
+The ultimate goal:
+
+I should eventually be able to add credentials/model endpoints like:
+
+RTMPOSE_ENDPOINT=...
+RTMPOSE_API_KEY=...
+
+LLM_API_KEY=...
+
+DISC_MODEL_ENDPOINT=...
+
+OPENSIM_ENDPOINT=...
+
+Then restart the backend and have the provider become available.
+
+No application rewrite.
+
+No UI rewrite.
+
+No database rewrite.
+
+No pipeline rewrite.
+
+---
+
+41. PROVIDER HEALTH CHECK
+
+Create:
+
+GET /api/providers/health
+
+Return:
+
+{
+  "mediapipe": {
+    "available": true
+  },
+  "rtmpose": {
+    "available": false,
+    "reason": "API key not configured"
+  },
+  "mmpose": {
+    "available": true
+  },
+  "pose2sim": {
+    "available": false,
+    "reason": "Calibration unavailable"
+  },
+  "opensim": {
+    "available": false
+  },
+  "llm": {
+    "available": false,
+    "reason": "API key not configured"
+  }
+}
+
+Create an admin/developer screen showing provider status.
+
+---
+
+42. CAPABILITY SYSTEM
+
+Create capability detection.
+
+Example:
+
+CAPABILITIES
+
+2D POSE              AVAILABLE
+HIGH QUALITY POSE    AVAILABLE
+3D POSE              UNAVAILABLE
+DISC TRACKING        AVAILABLE
+OPEN SIM              UNAVAILABLE
+LLM COACHING          UNAVAILABLE
+PRO DATABASE          AVAILABLE
+
+The UI should adapt to available capabilities.
+
+---
+
+43. DO NOT LOCK THE APP TO A SINGLE MODEL
+
+The architecture must make this possible:
+
+2026:
+MediaPipe + RTMPose
+
+Later:
+New pose model
+
+Later:
+New disc detector
+
+Later:
+New 3D model
+
+Later:
+Custom proprietary biomechanics model
+
+Later:
+Commercial inference API
+
+Adding a model should mean implementing an adapter, not rewriting the app.
+
+---
+
+44. FIRST IMPLEMENTATION PRIORITY
+
+Do NOT attempt to perfect everything simultaneously.
+
+Build in this order:
+
+PHASE 1
+
+Working video ingestion.
+
+PHASE 2
+
+MediaPipe pose pipeline.
+
+PHASE 3
+
+Normalized landmark system.
+
+PHASE 4
+
+Throw-phase detection.
+
+PHASE 5
+
+Biomechanics engine.
+
+PHASE 6
+
+MMPose/RTMPose adapter.
+
+PHASE 7
+
+Disc detection adapter.
+
+PHASE 8
+
+Professional reference database.
+
+PHASE 9
+
+Comparison engine.
+
+PHASE 10
+
+Coaching engine.
+
+PHASE 11
+
+Pose2Sim.
+
+PHASE 12
+
+OpenSim.
+
+PHASE 13
+
+LLM explanation layer.
+
+PHASE 14
+
+Advanced UI and longitudinal Throw DNA.
+
+---
+
+45. CRITICAL DEVELOPMENT RULE
+
+Do NOT stop after creating interfaces.
+
+Implement real working local functionality wherever possible.
+
+For example:
+
+BAD:
+
+class RTMPoseAdapter {
+    // TODO
+}
+
+GOOD:
+
+A functional adapter capable of loading/configuring the model when the model is available, with explicit unavailable-state handling when it is not.
+
+---
+
+46. NO PLACEHOLDER ANALYSIS
+
+The application may show:
+
+Analysis unavailable
+
+It may NOT show:
+
+Your hip rotation is 43°
+
+unless that number came from an actual calculation.
+
+---
+
+47. BUILD AND VERIFY
+
+After implementation:
+
+1. Install dependencies.
+2. Run type checks.
+3. Run linting.
+4. Run unit tests.
+5. Run integration tests.
+6. Build frontend.
+7. Build backend.
+8. Test provider health.
+9. Test a real video.
+10. Verify skeleton output.
+11. Verify phase detection.
+12. Verify metric calculations.
+13. Verify unavailable-provider behavior.
+14. Verify fallback behavior.
+15. Verify the UI.
+16. Fix every failure discovered.
+
+Do not report success merely because compilation succeeds.
+
+---
+
+48. FINAL AUDIT
+
+Before declaring the implementation complete, inspect the entire codebase for:
+
+- broken imports
+- dead code
+- TODO placeholders
+- fake data
+- hard-coded providers
+- missing error handling
+- secrets in source
+- duplicated processing
+- race conditions
+- missing validation
+- database inconsistencies
+- incorrect units
+- incorrect coordinate systems
+- confidence propagation problems
+- provider coupling
+- unhandled API failures
+- memory leaks
+- excessive model loading
+- security problems
+- privacy problems
+
+Fix confirmed issues.
+
+Do not merely list them.
+
+---
+
+49. FINAL DELIVERABLE
+
+When finished, provide:
+
+IMPLEMENTED
+
+Architecture:
+...
+
+Models supported:
+...
+
+Models currently runnable:
+...
+
+Models awaiting credentials/model files:
+...
+
+Analysis pipeline:
+...
+
+Files created:
+...
+
+Files modified:
+...
+
+Tests:
+...
+
+Build:
+...
+
+Provider configuration:
+...
+
+Known limitations:
+...
+
+Most importantly:
+
+The app must now be architecturally ready for real professional-grade disc-golf throw analysis.
+
+The only future work required to activate external providers should be supplying the required:
+
+- API key
+- model
+- endpoint
+- GPU server
+- model weights
+- camera calibration
+
+Do NOT require an architectural rewrite when those become available.
+
+Build the system now.
+Do not stop at planning.
+Do not fabricate unavailable AI results.
+Do not remove existing functionality.
+Do not introduce unnecessary paid services.
+Keep the implementation modular, testable, provider-agnostic, and production-oriented.

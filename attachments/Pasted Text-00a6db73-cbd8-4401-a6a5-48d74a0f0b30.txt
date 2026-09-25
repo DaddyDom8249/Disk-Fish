@@ -1,0 +1,2581 @@
+BUILD THE APP: PRO THROW ANALYZER
+
+You are the lead product engineer, computer-vision engineer, sports-biomechanics engineer, UX designer, data architect, QA engineer, and technical project manager for this application.
+
+Build a production-quality mobile-first application that analyzes a disc golfer's throwing mechanics from video and compares their measurable movement patterns against a database of professional disc golfers.
+
+CORE PRODUCT
+
+The core concept is:
+
+«Record or upload a disc-golf throw → analyze the body and throwing sequence → extract measurable biomechanics → compare against relevant professional reference patterns → identify the user's largest mechanical differences → provide specific, actionable training corrections → allow the user to record another throw and measure improvement.»
+
+The application is NOT merely a disc-speed calculator.
+
+It is a biomechanics and technique-analysis system.
+
+The long-term goal is to answer:
+
+«"What exactly is my body doing during my throw, how does that differ from effective professional throwing patterns, and what should I change first?"»
+
+---
+
+1. NON-NEGOTIABLE DEVELOPMENT PRINCIPLES
+
+Follow these rules throughout development.
+
+Rule 1: Build a real application
+
+Do not create a static mockup.
+
+All major screens, navigation, data models, analysis states, uploads, video handling, results, history, comparisons, and settings must actually function.
+
+If a feature cannot currently be implemented, clearly isolate it behind an interface and label it unavailable rather than pretending it works.
+
+Rule 2: No fake AI
+
+Never generate invented measurements.
+
+Never display:
+
+- fake joint angles
+- fake release speed
+- fake spin
+- fake confidence
+- fake professional comparisons
+- fake improvement percentages
+- fake video-analysis results
+
+Every measurement must have a provenance:
+
+measurement
+source
+confidence
+timestamp/frame
+calculation method
+
+If the camera cannot reliably determine a measurement, return:
+
+Not reliably measurable from this video
+
+instead of inventing a number.
+
+Rule 3: Separate measured data from estimates
+
+Every metric must have one of these classifications:
+
+MEASURED
+ESTIMATED
+INFERRED
+UNAVAILABLE
+
+Examples:
+
+Measured:
+
+- visible joint coordinates
+- frame timing
+- visible body angles
+
+Estimated:
+
+- release angle
+- body-segment velocity
+- approximate disc orientation
+
+Inferred:
+
+- likely sequencing issue
+- probable early acceleration
+
+Unavailable:
+
+- true disc spin if the video does not contain enough information
+
+Rule 4: Never claim that a user should copy one professional exactly
+
+Professional throwers have different:
+
+- body proportions
+- flexibility
+- mobility
+- strength
+- throwing styles
+- footwork
+- timing
+- grips
+- release characteristics
+
+The system should identify effective movement patterns and relevant reference ranges rather than forcing the user into a single professional's exact mechanics.
+
+Rule 5: Build incrementally
+
+Build the smallest complete vertical slice first:
+
+VIDEO
+↓
+POSE DETECTION
+↓
+THROW PHASE DETECTION
+↓
+METRICS
+↓
+REFERENCE COMPARISON
+↓
+COACHING RESULT
+
+Only expand once that pipeline works.
+
+Do NOT build a giant architecture before proving the pipeline.
+
+---
+
+2. APPLICATION NAME
+
+Use a temporary working name:
+
+PRO THROW ANALYZER
+
+Architecture must make renaming easy later.
+
+Do not hard-code the product name throughout the codebase.
+
+---
+
+3. PRIMARY USER
+
+The target user is a disc golfer who wants to improve their throwing mechanics.
+
+Users may range from:
+
+- beginner
+- recreational player
+- amateur tournament player
+- advanced amateur
+- professional
+
+The application must therefore explain technical information in plain language.
+
+Example:
+
+Bad:
+
+«"Excessive proximal-to-distal sequencing deficit."»
+
+Good:
+
+«"Your upper body starts accelerating before your hips finish transferring power."»
+
+Technical details can remain available under an advanced-analysis section.
+
+---
+
+4. THROW TYPES
+
+The application must support a throw-type architecture.
+
+Initially implement:
+
+RHBH
+LHBH
+RHFH
+LHFH
+Standstill
+One-step
+X-step
+Putting
+Approach
+Distance Drive
+Control/Fairway Drive
+
+Architecture should allow future addition of:
+
+Roller
+Tomahawk
+Thumber
+Grenade
+Utility throws
+
+Do not use the same biomechanical model blindly for every throw.
+
+Each throw type must have its own analysis profile.
+
+---
+
+5. USER WORKFLOW
+
+Implement this exact primary workflow.
+
+SCREEN 1: HOME
+
+Display:
+
+- New Throw
+- Throw History
+- My Throw DNA
+- Compare Throws
+- Professional Reference Library
+- Training Progress
+
+Primary button:
+
+ANALYZE A THROW
+
+Secondary information:
+
+Last analyzed throw
+Current primary training focus
+Recent improvement
+
+Do not overwhelm the home screen.
+
+---
+
+6. NEW THROW
+
+Screen:
+
+Analyze New Throw
+
+Inputs:
+
+Throw type
+Throwing hand
+Throw style
+Camera angle
+Video
+Optional disc
+Optional distance
+Optional notes
+
+Throw hand:
+
+Right
+Left
+
+Throw style dynamically filters available throw types.
+
+---
+
+7. VIDEO INPUT
+
+Support:
+
+Record Video
+Upload Video
+
+For the first implementation, uploaded video may be the primary path if live camera processing is not reliable.
+
+Accepted formats should include common mobile formats.
+
+Validate:
+
+- file exists
+- supported format
+- readable video
+- duration
+- resolution
+- frame rate where available
+- file size
+
+Display a clear warning if the video is unsuitable.
+
+Example:
+
+«Best results: camera perpendicular to the throwing plane, full body visible, good lighting, and high frame rate.»
+
+---
+
+8. CAMERA GUIDANCE
+
+Before recording, display a visual setup guide.
+
+Show:
+
+FULL BODY
+     ↓
+HEAD
+SHOULDERS
+HIPS
+KNEES
+FEET
+
+The system should tell the user:
+
+Recommended
+
+- full body visible
+- stable camera
+- side/rear-side view appropriate to throw
+- good lighting
+- minimal obstruction
+- high frame rate when available
+- camera approximately perpendicular to throwing plane
+
+Avoid
+
+- cropped feet
+- cropped head
+- severe backlighting
+- moving camera
+- extreme wide angle
+- people crossing in front of thrower
+
+Do not pretend the camera can recover information it cannot see.
+
+---
+
+9. VIDEO QUALITY ANALYSIS
+
+Before analyzing mechanics, automatically score the video.
+
+Create:
+
+Video Quality Score
+
+Factors:
+
+- body visibility
+- frame rate
+- resolution
+- camera stability
+- lighting
+- occlusion
+- background contrast
+- throw completeness
+
+Return:
+
+GOOD
+ACCEPTABLE
+POOR
+UNUSABLE
+
+If unusable:
+
+Explain exactly why.
+
+Example:
+
+«Your plant foot leaves the frame during the brace phase. Record from farther away so your complete body remains visible.»
+
+Do not proceed with unreliable analysis.
+
+---
+
+10. COMPUTER VISION PIPELINE
+
+Create a modular vision pipeline.
+
+Architecture:
+
+Video
+ ↓
+Frame extraction
+ ↓
+Human detection
+ ↓
+Pose estimation
+ ↓
+Landmark normalization
+ ↓
+Temporal smoothing
+ ↓
+Throw-phase segmentation
+ ↓
+Biomechanical feature extraction
+ ↓
+Confidence scoring
+
+The pose engine must be replaceable.
+
+Do not hard-code the application to one computer-vision provider.
+
+Create an abstraction such as:
+
+PoseEstimator
+
+with a standard output format.
+
+---
+
+11. STANDARD BODY LANDMARKS
+
+Support a consistent body model.
+
+At minimum:
+
+head
+neck
+left/right shoulder
+left/right elbow
+left/right wrist
+left/right hip
+left/right knee
+left/right ankle
+left/right foot
+
+If the selected pose engine provides additional landmarks, preserve them.
+
+Store:
+
+x
+y
+z if available
+confidence
+frame
+timestamp
+
+Do not discard raw landmark information.
+
+---
+
+12. BODY NORMALIZATION
+
+Raw pixel measurements are insufficient for comparing different videos.
+
+Normalize measurements using appropriate body-relative references.
+
+Potential normalization references:
+
+height
+shoulder width
+hip width
+arm length
+leg length
+plant-foot distance
+
+Where actual physical scale is unavailable, explicitly label measurements as normalized rather than absolute.
+
+Example:
+
+Reach-back distance:
+1.42 × shoulder width
+
+rather than falsely claiming:
+
+Reach-back = 1.14 meters
+
+unless actual scale is known.
+
+---
+
+13. THROW PHASE DETECTION
+
+Automatically identify major phases.
+
+For backhand:
+
+Setup
+Initial movement
+X-step
+Cross-step
+Plant preparation
+Plant
+Brace
+Reach-back
+Transition
+Hip rotation
+Shoulder rotation
+Arm acceleration
+Elbow extension
+Wrist acceleration
+Release
+Follow-through
+Recovery
+
+Not every phase will be equally visible in every video.
+
+Each phase should have:
+
+start frame
+end frame
+peak frame
+confidence
+
+Example:
+
+{
+  "phase": "release",
+  "frame": 147,
+  "timestamp_ms": 2450,
+  "confidence": 0.91
+}
+
+---
+
+14. BIOMECHANICAL METRICS
+
+Build a metric engine.
+
+Organize metrics into categories.
+
+LOWER BODY
+
+Measure or estimate when possible:
+
+- stance width
+- plant-foot position
+- plant-foot angle
+- stride length
+- x-step length
+- knee flexion
+- knee extension
+- center-of-mass displacement
+- weight-transfer timing
+- brace timing
+- front-leg stability
+- rear-leg contribution
+- lower-body velocity
+
+PELVIS
+
+Measure:
+
+- pelvis rotation
+- pelvis angular velocity
+- pelvis rotation timing
+- pelvis orientation
+- hip-to-shoulder separation
+
+TORSO
+
+Measure:
+
+- torso rotation
+- torso tilt
+- spine angle
+- shoulder rotation
+- shoulder angular velocity
+- hip/shoulder separation
+- torso acceleration
+
+THROWING ARM
+
+Measure:
+
+- shoulder angle
+- elbow angle
+- elbow position
+- forearm angle
+- wrist position
+- reach-back distance
+- arm acceleration
+- elbow extension timing
+- shoulder-to-elbow sequencing
+
+RELEASE
+
+Measure/estimate where technically possible:
+
+- release point
+- release height relative to body
+- horizontal release position
+- release direction
+- hyzer/anhyzer angle
+- nose angle
+- launch angle
+- apparent release timing
+
+DISC
+
+Only calculate metrics supported by actual evidence.
+
+Potential metrics:
+
+- disc orientation
+- disc velocity
+- angular velocity/spin
+- wobble
+- launch direction
+
+If disc tracking is insufficient:
+
+Disc spin: unavailable from this video
+
+Do NOT hallucinate spin.
+
+---
+
+15. TEMPORAL ANALYSIS
+
+Timing is one of the most important parts of the application.
+
+Calculate relative timing between events.
+
+Examples:
+
+Plant → Hip rotation
+Hip rotation → Shoulder rotation
+Shoulder rotation → Elbow acceleration
+Elbow acceleration → Wrist acceleration
+Wrist acceleration → Release
+
+Store intervals in milliseconds.
+
+Also calculate normalized throw timing:
+
+percentage of total throw cycle
+
+This makes different throw speeds comparable.
+
+---
+
+16. SEQUENCING MODEL
+
+Create a sequencing representation:
+
+LOWER BODY
+    ↓
+PELVIS
+    ↓
+TORSO
+    ↓
+SHOULDER
+    ↓
+ELBOW
+    ↓
+FOREARM
+    ↓
+WRIST
+    ↓
+DISC
+
+The system should identify whether acceleration generally progresses through the kinetic chain.
+
+Do not assume one exact sequence applies universally.
+
+Instead compare against validated reference patterns.
+
+---
+
+17. PROFESSIONAL DATABASE
+
+Create a database architecture for professional players.
+
+Fields:
+
+player_id
+player_name
+display_name
+handedness
+throw_types
+height if publicly documented
+dominant_throw_styles
+source
+source_url
+license_status
+data_quality
+sample_count
+analysis_version
+
+For each professional throw:
+
+throw_id
+player_id
+throw_type
+hand
+video_source
+license
+camera_angle
+frame_rate
+resolution
+analysis_quality
+pose_data
+phase_data
+metrics
+confidence
+
+IMPORTANT:
+
+Do not scrape, copy, redistribute, or commercially use copyrighted professional footage unless legally permitted.
+
+The system must track source and licensing status.
+
+Use placeholder/reference records during development if necessary.
+
+Do not fabricate professional data.
+
+---
+
+18. PROFESSIONAL REFERENCE MODEL
+
+Do not create a single "perfect pro."
+
+Build reference distributions.
+
+For each metric calculate, when sufficient data exists:
+
+median
+mean
+standard deviation
+percentiles
+sample size
+confidence
+
+Potential reference range:
+
+25th percentile → 75th percentile
+
+or another scientifically justified range.
+
+The UI should explain:
+
+«"This represents the observed range within the selected reference sample."»
+
+Do not call it the "correct" value unless scientifically justified.
+
+---
+
+19. PLAYER MATCHING
+
+Allow users to compare their throw against:
+
+All Professionals
+Throw-Type Reference
+Style Reference
+Selected Professional
+Selected Group
+
+Potential future filters:
+
+handedness
+height range
+throw style
+distance category
+body type
+professional level
+
+Do not imply that body size alone determines ideal mechanics.
+
+---
+
+20. THROW DNA
+
+Create a composite user profile called:
+
+Throw DNA
+
+Categories:
+
+Power Generation
+Lower-Body Mechanics
+Hip Rotation
+Torso Sequencing
+Arm Mechanics
+Release Mechanics
+Timing
+Consistency
+Balance
+Follow-through
+
+Do NOT initially convert these into arbitrary 0–100 scores unless the score has a defensible calculation.
+
+Instead, display:
+
+Measured profile
+Reference deviation
+Confidence
+
+If a 0–100 score is eventually used, document exactly how it is calculated.
+
+---
+
+21. USER VS PROFESSIONAL COMPARISON
+
+The comparison engine should produce:
+
+Metric
+User value
+Reference value/range
+Difference
+Confidence
+Importance
+
+Example:
+
+Hip rotation timing
+
+YOU
+184 ms
+
+REFERENCE RANGE
+160–175 ms
+
+Difference
++9 ms
+
+Confidence
+High
+
+Then explain the meaning in plain language.
+
+---
+
+22. PRIORITIZATION ENGINE
+
+This is one of the most important parts of the application.
+
+Do NOT give users 20 corrections simultaneously.
+
+Rank potential issues using:
+
+measurement confidence
+size of deviation
+repeatability
+biomechanical relevance
+relationship to other deviations
+throw-type relevance
+
+Identify:
+
+PRIMARY FOCUS
+SECONDARY FOCUS
+OBSERVE
+
+The primary focus should be the issue most likely to provide useful training value based on available evidence.
+
+Do not claim that changing it will definitely increase distance.
+
+Use wording such as:
+
+«"This is the clearest measurable difference in this analysis."»
+
+---
+
+23. COACHING ENGINE
+
+Generate coaching explanations from structured measurements.
+
+Do not allow an LLM to invent measurements.
+
+The architecture must be:
+
+VIDEO ANALYSIS
+      ↓
+STRUCTURED METRICS
+      ↓
+RULE / ANALYSIS ENGINE
+      ↓
+COACHING CONTEXT
+      ↓
+LLM LANGUAGE GENERATION
+
+The LLM may explain structured findings.
+
+It must NOT create findings.
+
+Example structured input:
+
+{
+  "issue": "early_upper_body_acceleration",
+  "confidence": 0.88,
+  "user_measurement": 0.42,
+  "reference_range": [0.51, 0.58],
+  "throw_type": "RHBH"
+}
+
+The LLM turns this into understandable coaching language.
+
+---
+
+24. COACHING OUTPUT
+
+Every analysis should contain:
+
+WHAT WE SAW
+
+Plain-language description.
+
+WHY IT MATTERS
+
+Explain the mechanical relationship.
+
+YOUR PRIMARY FOCUS
+
+One thing.
+
+WHAT TO TRY
+
+One or two specific drills/cues.
+
+WHAT TO WATCH FOR
+
+A concrete visual cue.
+
+RECHECK
+
+Tell the user what measurement should change if the adjustment is useful.
+
+Example:
+
+«Your shoulders begin accelerating before your hips have completed their rotation.
+
+Primary focus: delay active upper-body acceleration.
+
+Try: keep the throwing arm relaxed through the plant and let the lower body initiate the rotation.
+
+Watch for: your shoulders staying quieter until after the plant.
+
+Recheck: hip-to-shoulder timing.»
+
+Never present medical advice.
+
+Avoid injury diagnosis.
+
+If a movement appears potentially unsafe, state:
+
+«"This analysis cannot determine whether a movement is medically safe. Consider working with a qualified throwing coach or healthcare professional if you are experiencing pain."»
+
+---
+
+25. VISUAL ANALYSIS
+
+The results screen should display the user's video with analysis overlays.
+
+Overlay:
+
+skeleton
+joint markers
+throw phase
+trajectory
+angles
+reference comparison
+
+Allow:
+
+Play
+Pause
+Slow motion
+Frame advance
+Frame rewind
+Restart
+
+Add a timeline:
+
+SETUP | X-STEP | PLANT | ROTATION | RELEASE | FOLLOW-THROUGH
+
+When the user scrubs through the video, show the corresponding metrics.
+
+---
+
+26. PRO OVERLAY
+
+If licensed professional reference footage exists, allow synchronized comparison.
+
+Display:
+
+USER
+PRO REFERENCE
+
+Side-by-side or overlay.
+
+Important:
+
+Never imply the pro video is the user's exact target motion.
+
+Use:
+
+«Reference comparison»
+
+not:
+
+«Copy this throw.»
+
+---
+
+27. SKELETON VISUALIZATION
+
+Create a clean biomechanical visualization.
+
+Show:
+
+- joints
+- limb segments
+- pelvis
+- torso
+- throwing arm
+- plant foot
+- movement direction
+
+Allow toggles:
+
+Skeleton
+Angles
+Velocity vectors
+Phase labels
+Reference
+
+---
+
+28. FRAME-BY-FRAME ANALYSIS
+
+Users must be able to inspect individual frames.
+
+Display:
+
+Frame
+Timestamp
+Current phase
+Joint angles
+Key metrics
+Confidence
+
+This is essential for serious users.
+
+---
+
+29. THROW HISTORY
+
+Store every analyzed throw.
+
+Each record:
+
+date
+throw type
+video
+analysis version
+metrics
+primary focus
+confidence
+reference group
+notes
+
+Display trends.
+
+Example:
+
+Hip timing
+Throw 1
+Throw 5
+Throw 12
+Throw 20
+
+Do not show fake trend lines.
+
+Only plot actual analyzed data.
+
+---
+
+30. IMPROVEMENT TRACKING
+
+Allow users to compare:
+
+Throw #1
+vs
+Throw #10
+
+Show:
+
+metric changed
+direction
+amount
+confidence
+
+Do not automatically translate mechanical changes into claims such as:
+
+«"You gained 40 feet."»
+
+unless actual throwing distance has been measured.
+
+---
+
+31. CONSISTENCY ANALYSIS
+
+After multiple throws, calculate repeatability.
+
+For each metric:
+
+mean
+median
+variance
+range
+standard deviation
+
+Example:
+
+Release height
+
+Throw 1: 1.02
+Throw 2: 1.04
+Throw 3: 1.01
+Throw 4: 1.03
+
+Consistency: high
+
+Use normalized values when absolute scale is unavailable.
+
+---
+
+32. MULTI-THROW ANALYSIS
+
+Allow the user to analyze a session.
+
+Example:
+
+Analyze 5 Throws
+
+The application should identify:
+
+average mechanics
+best-consistency throw
+largest deviation
+repeatable issue
+outlier throw
+
+Do not classify an isolated throw as a mechanical problem.
+
+Require repeated evidence where possible.
+
+---
+
+33. CONFIDENCE SYSTEM
+
+Every major result needs confidence.
+
+Use:
+
+HIGH
+MEDIUM
+LOW
+
+Based on measurable factors.
+
+Do not expose arbitrary confidence numbers without a defined model.
+
+Example:
+
+«High confidence: body landmarks were visible across 94% of relevant frames.»
+
+---
+
+34. INVALID ANALYSIS CONDITIONS
+
+Automatically detect:
+
+- missing feet
+- missing throwing arm
+- severe occlusion
+- multiple people
+- insufficient frames
+- excessive motion blur
+- poor lighting
+- camera movement
+- incomplete throw
+- incorrect camera angle
+- inconsistent framing
+
+Return specific errors.
+
+Example:
+
+«Analysis stopped because your plant foot was outside the frame during the most important phase.»
+
+---
+
+35. DATABASE DESIGN
+
+Use a clean relational/data-model architecture.
+
+Minimum entities:
+
+users
+throws
+videos
+video_analysis
+pose_frames
+throw_phases
+metrics
+metric_measurements
+professional_players
+professional_throws
+reference_profiles
+comparisons
+coaching_results
+training_sessions
+
+Every generated analysis should reference an:
+
+analysis_version
+
+This allows future algorithms to be compared without corrupting historical results.
+
+---
+
+36. VERSIONING
+
+Every analysis must include:
+
+vision_model_version
+metric_engine_version
+reference_dataset_version
+coaching_engine_version
+
+Example:
+
+vision: 1.0
+metrics: 1.0
+references: 1.0
+coaching: 1.0
+
+Never silently change the interpretation of old data.
+
+---
+
+37. PRIVACY
+
+Videos are highly personal biometric-like movement data.
+
+Implement:
+
+- secure upload
+- authenticated access
+- private storage
+- user deletion
+- account deletion
+- video deletion
+- analysis deletion
+- explicit consent for model-training use
+- no training use by default
+
+Do not sell or expose user videos.
+
+---
+
+38. PROFESSIONAL DATA RIGHTS
+
+Professional data must have provenance.
+
+Create fields for:
+
+source_url
+source_type
+rights_status
+license
+permission_date
+attribution_required
+commercial_use_allowed
+
+The application must distinguish:
+
+PUBLICLY VIEWABLE
+
+from:
+
+LICENSED FOR COMMERCIAL ANALYSIS
+
+These are NOT the same thing.
+
+Do not use professional footage commercially merely because it is publicly available online.
+
+---
+
+39. UX DESIGN
+
+Design language:
+
+modern
+sports-tech
+clean
+technical
+fast
+professional
+
+Avoid:
+
+- clutter
+- excessive gradients
+- fake futuristic effects
+- unnecessary animations
+- tiny text
+- giant dashboards
+
+Primary action should always be obvious.
+
+---
+
+40. MOBILE-FIRST
+
+Optimize for phones first.
+
+The primary user is standing on a disc-golf course with a phone.
+
+Buttons must be large enough to tap.
+
+Video controls must work with touch.
+
+Results must remain readable outdoors.
+
+Do not make users navigate through ten screens to analyze a throw.
+
+---
+
+41. MAIN NAVIGATION
+
+Use:
+
+Home
+Analyze
+History
+Pros
+Profile
+
+Keep navigation simple.
+
+---
+
+42. HOME DASHBOARD
+
+Show:
+
+Analyze New Throw
+
+Current Training Focus
+----------------------
+Primary issue
+
+Recent Throws
+-------------
+latest results
+
+Progress
+--------
+trend
+
+Throw DNA
+---------
+summary
+
+---
+
+43. ANALYSIS RESULT SCREEN
+
+Structure:
+
+YOUR THROW
+
+[VIDEO]
+
+PRIMARY FINDING
+----------------
+
+WHAT WE SAW
+
+WHY IT MATTERS
+
+WHAT TO CHANGE
+
+REFERENCE COMPARISON
+
+DETAILED METRICS
+
+FRAME ANALYSIS
+
+SAVE THROW
+
+The first screen should communicate the most important information in seconds.
+
+---
+
+44. DETAILED METRICS SCREEN
+
+Allow technical users to inspect:
+
+metric
+value
+unit
+source
+confidence
+reference
+difference
+frame
+
+Include a clear explanation of what each metric means.
+
+---
+
+45. PRO LIBRARY
+
+Create:
+
+Professionals
+Reference Groups
+Throw Types
+
+Each player page:
+
+Name
+Throw types
+Available reference data
+Source
+Data quality
+Sample size
+
+Do not fabricate player measurements.
+
+Use clearly marked demo/reference records during development.
+
+---
+
+46. SEARCH
+
+Support searching:
+
+player
+throw type
+metric
+reference group
+
+---
+
+47. SETTINGS
+
+Include:
+
+Units
+Camera settings
+Privacy
+Data deletion
+Analysis preferences
+Reference preferences
+About
+Methodology
+
+---
+
+48. METHODOLOGY PAGE
+
+This is important.
+
+Explain:
+
+- what the system measures
+- what it estimates
+- what it cannot measure
+- how professional reference data is obtained
+- how confidence works
+- how comparisons are generated
+- limitations of monocular video
+- why different professionals may have different mechanics
+
+Never market estimates as laboratory measurements.
+
+---
+
+49. SCIENTIFIC VALIDITY
+
+Build the architecture so measurements can eventually be validated against:
+
+- high-speed multi-camera systems
+- motion-capture systems
+- radar
+- disc sensors
+- force plates
+- expert biomechanical analysis
+
+Store validation metadata where available.
+
+Example:
+
+metric_validation
+method
+reference_system
+error
+sample_size
+date
+
+---
+
+50. FUTURE SENSOR SUPPORT
+
+Do not implement unless necessary for MVP, but architect interfaces for:
+
+Radar
+Disc sensors
+IMUs
+High-speed cameras
+Motion capture
+Wearables
+
+Example:
+
+MeasurementProvider
+
+The video engine should be one provider.
+
+---
+
+51. AI ARCHITECTURE
+
+AI should be modular.
+
+Possible layers:
+
+Computer Vision
+Biomechanical Analysis
+Reference Matching
+Coaching Reasoning
+Natural Language
+
+Do not put everything inside one giant prompt.
+
+---
+
+52. RULE ENGINE
+
+Create deterministic rules for known relationships.
+
+Example:
+
+IF
+upper-body acceleration occurs before reference sequencing window
+AND
+confidence >= threshold
+AND
+pattern repeats across multiple throws
+
+THEN
+flag:
+EARLY_UPPER_BODY_ACCELERATION
+
+Store rules separately from UI code.
+
+This makes the coaching engine auditable.
+
+---
+
+53. LLM SAFETY AGAINST HALLUCINATED MEASUREMENTS
+
+LLM receives structured facts only.
+
+Example:
+
+{
+  "throw_type": "RHBH",
+  "primary_finding": {
+    "metric": "hip_to_shoulder_timing",
+    "user": 182,
+    "reference_median": 169,
+    "difference": 13,
+    "confidence": "high"
+  }
+}
+
+The LLM may explain.
+
+It may NOT change:
+
+182
+169
+13
+high
+
+It may NOT invent additional measurements.
+
+---
+
+54. ANALYSIS STATE MACHINE
+
+Implement clear states:
+
+IDLE
+UPLOADING
+VALIDATING
+PROCESSING
+POSE_DETECTION
+PHASE_DETECTION
+METRIC_ANALYSIS
+REFERENCE_COMPARISON
+COACHING
+COMPLETE
+FAILED
+
+Show progress to users.
+
+Example:
+
+Uploading
+✓
+Video validation
+✓
+Body tracking
+●
+Throw sequencing
+○
+Biomechanics
+○
+Comparison
+○
+Coaching
+○
+
+---
+
+55. ERROR HANDLING
+
+Every backend/API/model failure must produce:
+
+user-friendly message
+technical error ID
+retry option
+
+Never expose raw stack traces to users.
+
+Log technical details securely.
+
+---
+
+56. PERFORMANCE
+
+The app must not freeze during analysis.
+
+Use asynchronous processing.
+
+Long-running analysis must support:
+
+queued
+processing
+complete
+failed
+
+Allow the user to leave the screen and return to the result later.
+
+---
+
+57. COST CONTROL
+
+Design processing so expensive AI is not unnecessarily called.
+
+Use:
+
+deterministic calculations
+cached pose data
+cached analysis
+reference-data caching
+batch processing
+
+Do not send an entire video repeatedly to an LLM.
+
+The LLM should receive structured analysis results.
+
+---
+
+58. API ARCHITECTURE
+
+Use a clean API abstraction.
+
+Example:
+
+POST /analysis
+GET /analysis/:id
+GET /analysis/:id/metrics
+GET /analysis/:id/phases
+GET /analysis/:id/comparison
+GET /analysis/:id/coaching
+POST /throws
+DELETE /throws/:id
+GET /professionals
+GET /references
+
+Do not hard-code provider APIs directly into UI components.
+
+---
+
+59. SECURITY
+
+Implement:
+
+- authentication
+- authorization
+- input validation
+- upload validation
+- file-type validation
+- file-size limits
+- rate limiting
+- private storage
+- signed/private access URLs
+- secure deletion
+- server-side secrets
+- no API keys in client code
+
+Never put provider secrets in the mobile application.
+
+---
+
+60. DEMO MODE
+
+Create a safe demo mode.
+
+It must use clearly labeled synthetic/example data.
+
+Display:
+
+«DEMO DATA»
+
+Never mix demo data with real user measurements.
+
+---
+
+61. TESTING
+
+Create tests for:
+
+Video
+
+- valid upload
+- invalid upload
+- corrupted file
+- unsupported codec
+- missing metadata
+
+Vision
+
+- complete body
+- cropped body
+- multiple people
+- occlusion
+- low confidence
+
+Metrics
+
+- angle calculation
+- normalization
+- timing
+- missing landmarks
+- confidence propagation
+
+Comparison
+
+- matching throw type
+- mismatched throw type
+- missing professional data
+- insufficient reference sample
+
+Coaching
+
+- deterministic issue
+- low confidence
+- conflicting metrics
+- no actionable finding
+
+Security
+
+- unauthorized analysis access
+- unauthorized video access
+- deletion
+- upload validation
+- rate limits
+
+UI
+
+- mobile
+- desktop
+- slow network
+- failed processing
+- retry
+- history
+
+---
+
+62. ACCEPTANCE TEST
+
+The MVP is NOT complete until this workflow works end-to-end:
+
+Create account
+↓
+Analyze New Throw
+↓
+Select RHBH
+↓
+Upload valid video
+↓
+Video quality check
+↓
+Pose detection
+↓
+Throw phase detection
+↓
+Metric extraction
+↓
+Confidence calculation
+↓
+Reference comparison
+↓
+Primary finding
+↓
+Coaching explanation
+↓
+Save analysis
+↓
+View history
+↓
+Compare with another throw
+
+Every step must work.
+
+---
+
+63. MVP LIMITS
+
+Do NOT attempt to implement every possible metric immediately.
+
+The first functioning version should prioritize high-confidence measurements.
+
+Suggested MVP metrics:
+
+plant-foot position
+plant-foot angle
+stance width
+stride length
+knee angle
+hip rotation
+shoulder rotation
+hip/shoulder separation
+elbow angle
+reach-back position
+arm angle
+release point
+release timing
+phase timing
+follow-through
+
+Disc spin and true release velocity should remain unavailable unless the implementation can measure them credibly.
+
+---
+
+64. DEVELOPMENT PHASES
+
+Build in this order.
+
+PHASE 1
+
+Application shell.
+
+Complete:
+
+- navigation
+- authentication
+- user profile
+- database schema
+- upload flow
+- video storage
+- analysis record
+
+Then test it.
+
+PHASE 2
+
+Video validation.
+
+Complete:
+
+- format validation
+- frame-rate detection
+- resolution detection
+- duration
+- quality scoring
+- failure handling
+
+Then test it.
+
+PHASE 3
+
+Pose analysis.
+
+Complete:
+
+- frame extraction
+- pose detection
+- landmark storage
+- confidence
+- visualization
+
+Then test it.
+
+PHASE 4
+
+Throw segmentation.
+
+Complete:
+
+- throw detection
+- phase detection
+- timeline
+- release detection
+
+Then test it.
+
+PHASE 5
+
+Biomechanical metrics.
+
+Complete:
+
+- angles
+- distances
+- timing
+- rotation
+- normalization
+- confidence
+
+Then test it.
+
+PHASE 6
+
+Reference engine.
+
+Complete:
+
+- professional data model
+- reference profiles
+- metric distributions
+- matching
+- provenance
+
+Use only real/licensed/reference data.
+
+PHASE 7
+
+Comparison engine.
+
+Complete:
+
+- user/reference comparison
+- deviations
+- confidence
+- prioritization
+
+PHASE 8
+
+Coaching engine.
+
+Complete:
+
+- deterministic findings
+- coaching rules
+- structured LLM explanation
+- primary correction
+
+PHASE 9
+
+History and progress.
+
+Complete:
+
+- saved throws
+- multi-throw analysis
+- trends
+- consistency
+- comparison
+
+PHASE 10
+
+Professional library.
+
+Complete:
+
+- players
+- reference groups
+- sources
+- rights information
+- filtering
+
+PHASE 11
+
+Polish.
+
+Complete:
+
+- mobile UX
+- accessibility
+- loading states
+- errors
+- animations
+- performance
+
+PHASE 12
+
+Production audit.
+
+Audit:
+
+security
+privacy
+performance
+cost
+accuracy
+data provenance
+copyright/licensing
+error handling
+database integrity
+API security
+mobile UX
+
+Fix all confirmed issues.
+
+---
+
+65. DATA INTEGRITY
+
+Never overwrite raw analysis data.
+
+Store:
+
+raw video
+raw landmarks
+raw phases
+raw metrics
+derived metrics
+comparison
+coaching result
+
+Derived data can be regenerated.
+
+Raw data should remain immutable.
+
+---
+
+66. AUDITABILITY
+
+Every result must be traceable.
+
+A developer should be able to answer:
+
+«"Why did the application tell this user that their sequencing was early?"»
+
+The system should show:
+
+metric
+raw source
+frames
+calculation
+reference dataset
+rule triggered
+confidence
+coaching text
+
+This is mandatory.
+
+---
+
+67. NO BLACK BOX CLAIMS
+
+Do not display:
+
+«"AI says you're doing this wrong."»
+
+Display:
+
+«"The analysis detected X based on Y measurements."»
+
+The system should teach the user why it reached the conclusion.
+
+---
+
+68. USER EDUCATION
+
+Add an optional:
+
+Learn
+
+Topics:
+
+Plant
+Brace
+Hip rotation
+Shoulder rotation
+Reach-back
+Elbow
+Wrist
+Release
+Nose angle
+Hyzer
+Anhyzer
+Timing
+Power generation
+Consistency
+
+Use diagrams and animations where useful.
+
+---
+
+69. PROFESSIONAL COMPARISON LANGUAGE
+
+Use neutral language.
+
+Good:
+
+«"Your hip rotation timing falls outside the observed range in the selected reference sample."»
+
+Good:
+
+«"Your movement sequence is closer to the selected reference group during the acceleration phase."»
+
+Bad:
+
+«"Your form is wrong."»
+
+Bad:
+
+«"You need to throw like this professional."»
+
+Bad:
+
+«"This is the perfect technique."»
+
+---
+
+70. BUSINESS ARCHITECTURE
+
+Design for future plans without implementing unnecessary complexity.
+
+Potential future tiers:
+
+Free
+Pro
+Coach
+Team
+Professional
+
+Potential future features:
+
+advanced analysis
+multi-camera analysis
+coach dashboards
+team accounts
+professional profiles
+sensor integration
+training plans
+remote coaching
+
+Do not build billing until the core analysis pipeline works.
+
+---
+
+71. COACH MODE
+
+Architect for future coaches.
+
+A coach should eventually be able to:
+
+invite athlete
+review throws
+annotate video
+compare sessions
+create training plan
+track progress
+
+Do not implement all of this in MVP unless it is easy.
+
+---
+
+72. DATA EXPORT
+
+Eventually support:
+
+CSV
+JSON
+PDF report
+
+The PDF should contain:
+
+throw information
+video metadata
+primary finding
+metrics
+reference comparison
+coaching recommendation
+confidence
+analysis version
+
+---
+
+73. REPORT DESIGN
+
+Example:
+
+THROW ANALYSIS
+
+Throw:
+RHBH Distance Drive
+
+PRIMARY FINDING
+
+Hip-to-shoulder sequencing
+
+MEASURED
+
+User:
+182 ms
+
+Reference:
+160–175 ms
+
+Confidence:
+High
+
+WHAT THIS MEANS
+
+Plain-language explanation.
+
+TRAINING FOCUS
+
+One correction.
+
+RECHECK
+
+One measurable target.
+
+TECHNICAL DATA
+
+Expandable section.
+
+---
+
+74. DATABASE SAMPLE DATA
+
+Create clearly labeled development records.
+
+Example:
+
+DEMO PROFESSIONAL 01
+DEMO PROFESSIONAL 02
+DEMO PROFESSIONAL 03
+
+Do NOT invent real professional statistics and label them as real.
+
+When real professional data is eventually imported, record its source and rights status.
+
+---
+
+75. UI DATA STATES
+
+Every screen needs:
+
+loading
+empty
+success
+error
+offline/connection failure where applicable
+
+Do not leave blank screens.
+
+---
+
+76. ACCESSIBILITY
+
+Implement:
+
+- readable contrast
+- large touch targets
+- screen-reader labels
+- keyboard accessibility where applicable
+- no color-only indicators
+- descriptive errors
+
+---
+
+77. RESPONSIVE DESIGN
+
+The application must work on:
+
+small Android phones
+large Android phones
+tablets
+desktop browser
+
+Mobile is the priority.
+
+---
+
+78. ANALYSIS TRANSPARENCY
+
+Add:
+
+How This Was Measured
+
+For each important metric explain:
+
+Source:
+Video pose tracking
+
+Calculation:
+Angle between shoulder/hip vectors
+
+Confidence:
+High
+
+Limitations:
+Camera angle can affect accuracy
+
+This builds user trust.
+
+---
+
+79. FUTURE SCIENTIFIC VALIDATION
+
+Create an internal validation framework.
+
+Allow a dataset containing:
+
+video
+ground_truth
+model_result
+absolute_error
+relative_error
+confidence
+
+Calculate:
+
+MAE
+RMSE
+bias
+correlation
+
+Do not expose these to normal users unless appropriate.
+
+---
+
+80. MODEL EVALUATION
+
+Do not judge the AI solely by whether users like the output.
+
+Track:
+
+pose accuracy
+phase detection accuracy
+metric error
+false positive rate
+false negative rate
+reference matching accuracy
+coaching agreement
+
+Where ground truth exists.
+
+---
+
+81. ARCHITECTURAL REQUIREMENT
+
+Use clear interfaces.
+
+At minimum:
+
+VideoProvider
+PoseEstimator
+PhaseDetector
+MetricEngine
+ReferenceEngine
+ComparisonEngine
+CoachingEngine
+StorageProvider
+AuthProvider
+
+Each provider should be replaceable.
+
+This prevents vendor lock-in.
+
+---
+
+82. CODE QUALITY
+
+Use:
+
+- typed models
+- validation
+- structured errors
+- centralized configuration
+- environment variables for secrets
+- logging
+- tests
+- clear naming
+- modular components
+
+Avoid:
+
+- giant files
+- duplicated logic
+- hard-coded secrets
+- magic numbers
+- provider-specific logic in UI
+- fake placeholder APIs presented as production functionality
+
+---
+
+83. BUILD VERIFICATION
+
+After every major phase:
+
+1. Build the application.
+2. Run tests.
+3. Check database migrations.
+4. Check API endpoints.
+5. Test the actual user workflow.
+6. Fix failures.
+7. Repeat.
+
+Do not merely say:
+
+«"Build completed."»
+
+Report actual verification results.
+
+---
+
+84. FINAL PRODUCTION CHECK
+
+Before declaring completion, verify:
+
+[ ] User registration works
+[ ] Video upload works
+[ ] Video validation works
+[ ] Analysis starts
+[ ] Pose detection works
+[ ] Phase detection works
+[ ] Metrics are calculated
+[ ] Confidence is calculated
+[ ] Reference comparison works
+[ ] Coaching output works
+[ ] No measurements are fabricated
+[ ] Results save correctly
+[ ] History works
+[ ] Comparison works
+[ ] Deletion works
+[ ] Privacy controls work
+[ ] Unauthorized access is blocked
+[ ] Errors are handled
+[ ] Mobile layout works
+[ ] Production build succeeds
+
+---
+
+85. MOST IMPORTANT PRODUCT RULE
+
+The application should never confuse:
+
+"measurable difference"
+
+with:
+
+"bad technique"
+
+A difference from a professional does not automatically mean the user is doing something wrong.
+
+The system must distinguish:
+
+Difference
+Potential issue
+Likely issue
+High-confidence issue
+
+based on evidence.
+
+---
+
+86. WHAT SUCCESS LOOKS LIKE
+
+A user uploads a throw.
+
+The application says something like:
+
+«Analysis complete
+
+We detected your plant, hip rotation, shoulder rotation, elbow extension and release with high confidence.
+
+Your clearest measurable difference from the selected reference group is hip-to-shoulder timing.
+
+Your upper body begins accelerating earlier relative to the lower body than the reference sample.
+
+Primary training focus: allow the lower body to initiate the rotation before actively accelerating the arm.
+
+Record another throw after practicing this change and compare the timing again.»
+
+That is the product.
+
+Not a gimmick.
+
+Not a generic AI coach.
+
+A measurable throwing-analysis system.
+
+---
+
+87. START BUILDING NOW
+
+Do not respond with a plan only.
+
+Start implementing.
+
+Build the application in phases internally, but continue through as many phases as possible without stopping for unnecessary confirmation.
+
+When you encounter a genuinely user-dependent decision, stop only at that exact point.
+
+For everything else, make the most technically reasonable assumption and continue.
+
+Do not ask me to choose a technology when a reasonable default exists.
+
+Do not add unnecessary infrastructure.
+
+Do not build features merely because they sound impressive.
+
+Prioritize the working analysis pipeline.
+
+---
+
+88. REQUIRED FIRST VERTICAL SLICE
+
+The first completed milestone MUST be:
+
+UPLOAD THROW VIDEO
+        ↓
+VALIDATE VIDEO
+        ↓
+DETECT BODY
+        ↓
+TRACK BODY THROUGH THROW
+        ↓
+IDENTIFY THROW PHASES
+        ↓
+CALCULATE INITIAL BIOMECHANICAL METRICS
+        ↓
+DISPLAY SKELETON + TIMELINE
+        ↓
+SHOW MEASUREMENTS + CONFIDENCE
+
+Only after this actually works should the professional comparison engine become the next priority.
+
+---
+
+89. DEVELOPMENT REPORT FORMAT
+
+After implementation, report:
+
+STATUS
+
+BUILT
+- ...
+
+VERIFIED
+- ...
+
+NOT YET IMPLEMENTED
+- ...
+
+REAL DATA
+- ...
+
+DEMO DATA
+- ...
+
+KNOWN LIMITATIONS
+- ...
+
+NEXT REQUIRED USER ACTION
+- ...
+
+Do not claim functionality that has not been tested.
+
+Do not hide errors.
+
+Do not substitute screenshots or mock data for a working pipeline.
+
+Build the actual application.
