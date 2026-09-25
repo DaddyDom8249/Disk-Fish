@@ -23,6 +23,10 @@ test("angular difference wraps", () => {
   assert.equal(angDiff(170, -170), -20);
 });
 
+test("angular difference handles the 180-degree wrap", () => {
+  assert.equal(Math.abs(angDiff(179, -179)), 2);
+});
+
 test("mean and median ignore empty", () => {
   assert.equal(mean([]), null);
   assert.equal(median([1, 3, 2]), 2);
