@@ -51,3 +51,17 @@ test("collapsed brace demo differs from early-shoulder demo", () => {
   assert.ok(ma != null && mb != null);
   assert.notEqual(Number(ma.toFixed(2)), Number(mb.toFixed(2)));
 });
+
+
+test("release proxy ignores an early speed spike and requires directional late motion", async () => {
+  const { detectReleaseProxy } = await import("./phase-detector.ts");
+  const wristSpeed = [0.02, 0.04, 0.08, 0.42, 0.12, 0.08, 0.1, 0.16, 0.25, 0.7, 0.34, 0.18, 0.1, 0.08];
+  const wristX = [0.1, 0.11, 0.13, 0.18, 0.17, 0.16, 0.18, 0.23, 0.3, 0.5, 0.62, 0.7, 0.74, 0.76];
+  assert.equal(detectReleaseProxy(wristSpeed, wristX, 1), 9);
+
+  const reversingX = [0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.18, 0.12, 0.08, 0.05];
+  assert.equal(
+    detectReleaseProxy([0.02, 0.03, 0.04, 0.05, 0.08, 0.1, 0.2, 0.5, 0.2, 0.1], reversingX, 1),
+    null,
+  );
+});
