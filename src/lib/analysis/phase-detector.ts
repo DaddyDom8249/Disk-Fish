@@ -87,6 +87,36 @@ export function detectReleaseProxy(
   return bestIndex;
 }
 
+export function detectPlantProxy(
+  ankleSpeed: Array<number | null>,
+  releaseIndex: number,
+  dt: number,
+): number | null {
+  if (ankleSpeed.length < 6 || releaseIndex < 3 || !Number.isFinite(dt) || dt <= 0) return null;
+  const start = Math.max(2, releaseIndex - Math.round(0.8 / dt));
+  const end = Math.min(releaseIndex - 2, releaseIndex - Math.max(2, Math.round(0.05 / dt)));
+  if (end <= start) return null;
+
+  const window = ankleSpeed.slice(start, end + 1).filter((v): v is number => v != null && Number.isFinite(v));
+  if (window.length < 3) return null;
+  const windowMax = Math.max(...window);
+  if (!(windowMax > 0)) return null;
+
+  let lastStableMinimum: number | null = null;
+  for (let i = start + 1; i < end; i++) {
+    const speed = ankleSpeed[i];
+    const prev = ankleSpeed[i - 1];
+    const next = ankleSpeed[i + 1];
+    const next2 = ankleSpeed[i + 2];
+    if (speed == null || prev == null || next == null || next2 == null) continue;
+    if (speed > prev || speed > next) continue;
+    if (speed > windowMax * 0.55) continue;
+    if (next2 > Math.max(speed * 1.35, speed + 0.01)) continue;
+    lastStableMinimum = i;
+  }
+  return lastStableMinimum;
+}
+
 export function inferThrowDirection(frames: PoseFrame[], throwType: ThrowTypeSpec): 1 | -1 {
   const wrist = throwType.throwingArm === "right" ? "right_wrist" : "left_wrist";
   const xs: number[] = [];
@@ -179,14 +209,7 @@ export function buildKinematics(
 
   let plantIndex: number | null = null;
   if (releaseIndex != null) {
-    let best = Infinity;
-    for (let i = Math.max(0, releaseIndex - Math.round(0.8 / dt)); i < releaseIndex; i++) {
-      const spd = plantAnkleSpeed[i];
-      if (spd != null && spd < best) {
-        best = spd;
-        plantIndex = i;
-      }
-    }
+    plantIndex = detectPlantProxy(plantAnkleSpeed, releaseIndex, dt);
   }
 
   let reachBackIndex: number | null = null;
