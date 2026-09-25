@@ -42,6 +42,51 @@ function seriesOk(arr: Array<number | null>): number {
   return arr.filter((v) => v != null).length / arr.length;
 }
 
+/**
+ * Finds a release proxy from the throwing-wrist motion rather than blindly
+ * selecting the largest speed anywhere in the clip.
+ *
+ * This is intentionally named a proxy: pose landmarks do not observe the disc
+ * leaving the hand. A real release detector needs disc/hand interaction data.
+ */
+export function detectReleaseProxy(
+  wristSpeed: Array<number | null>,
+  wristX: Array<number | null>,
+  direction: 1 | -1,
+): number | null {
+  if (wristSpeed.length < 6 || wristX.length !== wristSpeed.length) return null;
+  const finite = wristSpeed.filter((v): v is number => v != null && Number.isFinite(v));
+  if (!finite.length) return null;
+  const maxSpeed = Math.max(...finite);
+  if (!(maxSpeed > 0)) return null;
+
+  const firstAllowed = Math.max(2, Math.floor(wristSpeed.length * 0.35));
+  const lastAllowed = Math.min(wristSpeed.length - 3, Math.ceil(wristSpeed.length * 0.95));
+  let bestIndex: number | null = null;
+  let bestSpeed = -Infinity;
+
+  for (let i = firstAllowed; i <= lastAllowed; i++) {
+    const speed = wristSpeed[i];
+    const prev = wristSpeed[i - 1];
+    const next = wristSpeed[i + 1];
+    if (speed == null || prev == null || next == null) continue;
+    if (speed < maxSpeed * 0.55 || speed < prev || speed < next) continue;
+
+    const before = wristX[i - 3];
+    const after = wristX[i + 2];
+    if (before == null || after == null) continue;
+    const projectedTravel = (after - before) * direction;
+    if (!(projectedTravel > 0)) continue;
+
+    if (speed > bestSpeed) {
+      bestSpeed = speed;
+      bestIndex = i;
+    }
+  }
+
+  return bestIndex;
+}
+
 export function inferThrowDirection(frames: PoseFrame[], throwType: ThrowTypeSpec): 1 | -1 {
   const wrist = throwType.throwingArm === "right" ? "right_wrist" : "left_wrist";
   const xs: number[] = [];
@@ -130,7 +175,7 @@ export function buildKinematics(
     5,
   );
 
-  const releaseIndex = argMax(wristSpeed);
+  const releaseIndex = detectReleaseProxy(wristSpeed, wristX, dir);
 
   let plantIndex: number | null = null;
   if (releaseIndex != null) {
@@ -243,7 +288,7 @@ export function detectPhases(
   } else if (throwType.footwork === "one-step") {
     add("plant_preparation", setupEnd, plant, Math.round((setupEnd + plant) / 2));
   }
-  add("plant", Math.max(0, plant - 2), Math.min(rel, plant + 3), plant, "Front ankle speed minimum before release.");
+  add("plant", Math.max(0, plant - 2), Math.min(rel, plant + 3), plant, "Minimum plant-ankle speed in the 0.8-second window before the release proxy.");
   add("brace", plant, Math.min(rel, plant + Math.round(0.15 / kin.dt)), plant);
   add("reach_back", Math.max(setupEnd, rb - 4), Math.min(rel, rb + 2), rb, "Throwing wrist at maximum behind the torso.");
   add("transition", rb, Math.max(rb + 1, hipPeak), rb + 1);
@@ -251,7 +296,7 @@ export function detectPhases(
   add("shoulder_rotation", Math.max(plant, shPeak - 3), Math.min(rel, shPeak + 3), shPeak, "Peak shoulder-line angular speed.");
   add("arm_acceleration", Math.max(rb, rel - 8), rel, rel);
   add("elbow_extension", Math.max(rb, rel - 6), rel, rel);
-  add("release", rel, Math.min(n, rel + 1), rel, "Peak throwing-wrist speed.");
+  add("release", rel, Math.min(n, rel + 1), rel, "Peak throwing-wrist speed after directional late-throw filtering; disc leave is not directly observed.");
   add("follow_through", rel, Math.min(n, rel + Math.round(0.35 / kin.dt)), Math.min(n, rel + 4));
   add("recovery", Math.min(n, rel + Math.round(0.25 / kin.dt)), n, n);
 
