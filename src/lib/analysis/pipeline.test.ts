@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { generateDemoFrames } from "./demo-throw.ts";
 import { computeBodyScale } from "./body-scale.ts";
-import { buildKinematics, detectPhases, detectReleaseProxy } from "./phase-detector.ts";
+import { buildKinematics, detectPhases, detectPlantProxy, detectReleaseProxy } from "./phase-detector.ts";
 import { computeMetrics } from "./metrics.ts";
 import { compareToReference } from "./comparison.ts";
 import { buildCoaching } from "./coaching.ts";
@@ -63,4 +63,9 @@ test("release proxy ignores an early speed spike and requires directional late m
     detectReleaseProxy([0.02, 0.03, 0.04, 0.05, 0.08, 0.1, 0.2, 0.5, 0.2, 0.1], reversingX, 1),
     null,
   );
+});
+
+test("plant proxy chooses the later stable minimum before the release proxy", () => {
+  const speed = [0.02, 0.02, 0.03, 0.02, 0.02, 0.4, 0.35, 0.2, 0.05, 0.04, 0.045, 0.05, 0.3, 0.2];
+  assert.equal(detectPlantProxy(speed, 13, 0.05), 9);
 });
