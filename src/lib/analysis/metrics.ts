@@ -155,7 +155,7 @@ export function computeMetrics(
     }
   }
 
-  // Stride length: plant ankle vs rear ankle displacement along throw dir, or vs setup
+  // Plant ankle separation at the plant frame
   if (plantFrame && setupFrame && sw) {
     const p = jointAt(plantFrame, plantAnkle);
     const r = jointAt(plantFrame, rearAnkle);
@@ -179,7 +179,7 @@ export function computeMetrics(
         }),
       );
     } else {
-      out.push(unavailable("stride_length", "Stride length (plant)", "lower_body", "Ankles not visible at plant.", "Both ankles required."));
+      out.push(unavailable("stride_length", "Plant ankle separation", "lower_body", "Ankles not visible at plant.", "Both ankles required."));
     }
   }
 
