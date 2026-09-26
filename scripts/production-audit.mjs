@@ -364,6 +364,12 @@ function scanSecrets() {
                 continue;
             }
 
+            // This audit script contains credential-shaped regex literals by design.
+            // Do not self-report the scanner's own detection patterns as leaked secrets.
+            if (path.relative(ROOT, full) === "scripts/production-audit.mjs") {
+                continue;
+            }
+
             const patterns = [
                 /sk-[A-Za-z0-9_-]{20,}/g,
                 /AIza[0-9A-Za-z_-]{20,}/g,
