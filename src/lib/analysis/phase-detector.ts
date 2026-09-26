@@ -6,7 +6,7 @@ import type {
   ThrowTypeSpec,
 } from "./types";
 import { PHASE_LABELS } from "./throw-catalog.ts";
-import { angleDeg, argMax, dist2, finiteDiff, headingDeg, movingAverage } from "./geometry.ts";
+import { angleDeg, angDiff, argMax, dist2, headingDeg, movingAverage } from "./geometry.ts";
 import { jointAt } from "./smoothing.ts";
 import type { BodyScale } from "./types";
 
@@ -40,6 +40,78 @@ function conf(n: number, reason: string): { confidence: ConfidenceLevel; confide
 function seriesOk(arr: Array<number | null>): number {
   if (!arr.length) return 0;
   return arr.filter((v) => v != null).length / arr.length;
+}
+
+function angularFiniteDiff(values: Array<number | null>, dt: number): Array<number | null> {
+  return values.map((v, i) => {
+    if (v == null) return null;
+    const prev = values[i - 1];
+    const next = values[i + 1];
+    if (prev != null && next != null) return angDiff(next, prev) / (2 * dt);
+    if (next != null) return angDiff(next, v) / dt;
+    if (prev != null) return angDiff(v, prev) / dt;
+    return 0;
+  });
+}
+
+function findReachBackIndex(wristX: Array<number | null>, direction: 1 | -1): number | null {
+  const end = Math.max(2, Math.floor(wristX.length * 0.65));
+  let best = direction > 0 ? Infinity : -Infinity;
+  let index: number | null = null;
+
+  for (let i = 0; i < end; i++) {
+    const x = wristX[i];
+    if (x == null) continue;
+    if (direction > 0 && x < best) {
+      best = x;
+      index = i;
+    } else if (direction < 0 && x > best) {
+      best = x;
+      index = i;
+    }
+  }
+
+  return index;
+}
+
+function findReleaseIndex(
+  wristX: Array<number | null>,
+  wristSpeed: Array<number | null>,
+  direction: 1 | -1,
+): number | null {
+  const reachBack = findReachBackIndex(wristX, direction);
+  const start = Math.max(2, (reachBack ?? Math.floor(wristX.length * 0.35)) + 2);
+  const end = Math.min(wristSpeed.length - 2, Math.max(start, Math.floor(wristSpeed.length * 0.9)));
+
+  let bestIndex: number | null = null;
+  let bestSpeed = -Infinity;
+
+  // Release is selected from local wrist-speed peaks after reach-back,
+  // not from a clip-wide maximum that can be caused by follow-through noise.
+  for (let i = start; i <= end; i++) {
+    const speed = wristSpeed[i];
+    if (speed == null) continue;
+    const prev = wristSpeed[i - 1];
+    const next = wristSpeed[i + 1];
+    if (prev != null && next != null && speed >= prev && speed >= next && speed > bestSpeed) {
+      bestSpeed = speed;
+      bestIndex = i;
+    }
+  }
+
+  if (bestIndex != null) return bestIndex;
+
+  // Sparse landmark streams may have no strict local peak. Fall back to
+  // the strongest measured speed inside the phase-bounded search window.
+  for (let i = start; i <= end; i++) {
+    const speed = wristSpeed[i];
+    if (speed != null && speed > bestSpeed) {
+      bestSpeed = speed;
+      bestIndex = i;
+    }
+  }
+
+  return bestIndex;
 }
 
 export function inferThrowDirection(frames: PoseFrame[], throwType: ThrowTypeSpec): 1 | -1 {
@@ -122,15 +194,15 @@ export function buildKinematics(
     5,
   );
   const hipSpeed = movingAverage(
-    finiteDiff(hipAngle, dt * 1000).map((v) => (v == null ? null : Math.abs(v))),
+    angularFiniteDiff(hipAngle, dt * 1000).map((v) => (v == null ? null : Math.abs(v))),
     5,
   );
   const shoulderSpeed = movingAverage(
-    finiteDiff(shoulderAngle, dt * 1000).map((v) => (v == null ? null : Math.abs(v))),
+    angularFiniteDiff(shoulderAngle, dt * 1000).map((v) => (v == null ? null : Math.abs(v))),
     5,
   );
 
-  const releaseIndex = argMax(wristSpeed);
+  const releaseIndex = findReleaseIndex(wristX, wristSpeed, dir);
 
   let plantIndex: number | null = null;
   if (releaseIndex != null) {
