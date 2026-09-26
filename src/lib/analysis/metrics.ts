@@ -1,6 +1,5 @@
 import type {
   BodyScale,
-  Classification,
   ConfidenceLevel,
   MetricMeasurement,
   PoseFrame,
@@ -8,7 +7,7 @@ import type {
   ThrowTypeSpec,
   TimingInterval,
 } from "./types";
-import { angleDeg, dist2, headingDeg, isVisible, mean } from "./geometry.ts";
+import { angDiff, angleDeg, dist2, headingDeg, mean } from "./geometry.ts";
 import { denom } from "./body-scale.ts";
 import type { KinematicSeries } from "./phase-detector.ts";
 import { jointAt } from "./smoothing.ts";
@@ -165,18 +164,18 @@ export function computeMetrics(
       out.push(
         m({
           id: "stride_length",
-          label: "Stride length (plant)",
+          label: "Plant ankle separation",
           category: "lower_body",
           value: v,
           unit: "× shoulder width",
           classification: "measured",
           ...confFromVis(visAt(plantFrame, [plantAnkle, rearAnkle])),
-          method: "Horizontal ankle separation at plant, normalized by shoulder width.",
+          method: "Horizontal separation between plant and rear ankles at plant, normalized by shoulder width.",
           frame: plantFrame.frame,
           timestampMs: plantFrame.timestampMs,
           normalized: true,
           limitations: "Uses camera-horizontal as a proxy for the throwing plane.",
-          howMeasured: "Horizontal distance between plant and rear ankles at plant.",
+          howMeasured: "Horizontal distance between the plant and rear ankles at the plant frame.",
         }),
       );
     } else {
@@ -223,7 +222,7 @@ export function computeMetrics(
     if (lh && rh && ls && rs) {
       const hipH = headingDeg(lh, rh);
       const shH = headingDeg(ls, rs);
-      const sep = Math.abs(hipH - shH);
+      const sep = Math.abs(angDiff(hipH, shH));
       const c = confFromVis(visAt(sepFrame, ["left_hip", "right_hip", "left_shoulder", "right_shoulder"]));
       out.push(
         m({
