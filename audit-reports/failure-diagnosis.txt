@@ -1,0 +1,317 @@
+DISK-FISH FAILURE DIAGNOSTIC
+Generated: 2026-09-26T02:25:15Z
+
+PROJECT ROOT:
+/data/data/com.termux/files/home/DaddyDom8249/Disk-Fish
+
+===== ENVIRONMENT =====
+Node: v26.4.0
+npm:  12.0.2
+
+===== PACKAGE SCRIPTS =====
+{
+  "dev": "node scripts/with-app-env.mjs vite dev --host 0.0.0.0 --port 8080",
+  "build": "node scripts/with-app-env.mjs vite build && npm run db:migrate",
+  "db:migrate": "node scripts/migrate.mjs",
+  "build:dev": "node scripts/with-app-env.mjs vite build --mode development",
+  "preview": "node scripts/with-app-env.mjs vite preview",
+  "preview:restart": "node scripts/preview.mjs restart",
+  "preview:stop": "node scripts/preview.mjs stop",
+  "typecheck": "tsc --noEmit",
+  "check:auth": "node scripts/check-auth-invariant.mjs",
+  "test": "node --test 'scripts/**/*.test.mjs' && node --experimental-strip-types --test src/lib/app-data/app-data.test.ts src/lib/app-data/readiness-schedule.test.ts src/lib/auth/gate-identity.test.ts src/lib/auth/sign-in-gate.test.ts src/lib/analysis/geometry.test.ts src/lib/analysis/pipeline.test.ts src/lib/analysis/rules.test.ts",
+  "lint": "eslint .",
+  "format": "prettier --write .",
+  "audit": "node scripts/production-audit.mjs"
+}
+
+===== ACTUAL LINT ERRORS =====
+npm notice run lint
+npm notice run eslint .
+
+/data/data/com.termux/files/home/DaddyDom8249/Disk-Fish/.diskfish-audit-backups/grok-pwa-fix-20260925-192126/client.server.ts
+  281:13  error  Empty block statement  no-empty
+
+/data/data/com.termux/files/home/DaddyDom8249/Disk-Fish/src/components/analysis/skeleton-canvas.tsx
+  5:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/data/data/com.termux/files/home/DaddyDom8249/Disk-Fish/src/lib/analysis/metrics.ts
+   3:3   warning  'Classification' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  11:39  warning  'isVisible' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+
+/data/data/com.termux/files/home/DaddyDom8249/Disk-Fish/src/lib/auth/use-current-user.ts
+  59:3  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/rules-of-hooks')
+
+✖ 5 problems (1 error, 4 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+
+
+===== SECRET SCAN SCRIPT =====
+4: * Disk-Fish Self-Contained Production Audit
+318:function scanSecrets() {
+368:                /sk-[A-Za-z0-9_-]{20,}/g,
+369:                /AIza[0-9A-Za-z_-]{20,}/g,
+370:                /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/g,
+385:        record("secret-pattern-scan", "PASS");
+387:        record("secret-pattern-scan", "FAILED", {
+390:                "Potential credential pattern detected. Values are intentionally not printed."
+476:        record("disk-fish-analysis-risk-scan", "PASS");
+478:        record("disk-fish-analysis-risk-scan", "FAILED", {
+499:        project: "Disk-Fish",
+522:        "DISK-FISH SELF-CONTAINED PRODUCTION AUDIT",
+582:    console.log("DISK-FISH SELF-CONTAINED PRODUCTION AUDIT");
+651:    scanSecrets();
+
+===== METRICS RISK SOURCE =====
+--- angle calculations ---
+11:import { angleDeg, dist2, headingDeg, isVisible, mean } from "./geometry.ts";
+71:  const hipPhase = phases.find((p) => p.id === "hip_rotation");
+72:  const shPhase = phases.find((p) => p.id === "shoulder_rotation");
+78:  const setupFrame = frames[Math.min(2, frames.length - 1)];
+83:  const plantHip = throwType.plantFoot === "left" ? "left_hip" : "right_hip";
+84:  const throwSh = throwType.throwingArm === "right" ? "right_shoulder" : "left_shoulder";
+88:  const sw = denom(scale, "shoulder");
+96:      const c = confFromVis(visAt(plantFrame, ["left_ankle", "right_ankle", "left_shoulder", "right_shoulder"]));
+103:          unit: "× shoulder width",
+106:          method: "Ankle-to-ankle distance at plant, divided by mean shoulder width.",
+111:          howMeasured: "Distance between visible ankles at the plant frame, normalized by shoulder width.",
+120:          "Ankles or shoulders not visible at plant.",
+121:          "Requires both ankles and both shoulders at plant.",
+127:  // Plant-foot angle (foot vector vs throw direction / horizontal)
+137:          id: "plant_foot_angle",
+138:          label: "Plant-foot angle",
+148:          limitations: "Apparent 2D angle only. True foot progression angle needs a top-down or calibrated view.",
+149:          howMeasured: "Angle of the plant foot segment in the camera plane at plant.",
+154:        unavailable("plant_foot_angle", "Plant-foot angle", "lower_body", "Plant foot landmarks not visible.", "Ankle and foot index required."),
+159:  // Stride length: plant ankle vs rear ankle displacement along throw dir, or vs setup
+167:          id: "stride_length",
+168:          label: "Stride length (plant)",
+171:          unit: "× shoulder width",
+174:          method: "Horizontal ankle separation at plant, normalized by shoulder width.",
+183:      out.push(unavailable("stride_length", "Stride length (plant)", "lower_body", "Ankles not visible at plant.", "Both ankles required."));
+187:  // Plant knee angle
+189:    const h = jointAt(plantFrame, plantHip);
+193:      const v = angleDeg(h, k, a);
+196:          id: "plant_knee_angle",
+197:          label: "Plant-leg knee angle",
+202:          ...confFromVis(visAt(plantFrame, [plantHip, plantKnee, plantAnkle])),
+203:          method: "Interior angle hip–knee–ankle at plant.",
+208:          howMeasured: "Angle at the plant knee using hip, knee, and ankle.",
+212:      out.push(unavailable("plant_knee_angle", "Plant-leg knee angle", "lower_body", "Plant hip/knee/ankle not visible.", "Three plant-leg joints required."));
+216:  // Hip / shoulder apparent orientation and separation at reach-back / plant
+219:    const lh = jointAt(sepFrame, "left_hip");
+220:    const rh = jointAt(sepFrame, "right_hip");
+221:    const ls = jointAt(sepFrame, "left_shoulder");
+222:    const rs = jointAt(sepFrame, "right_shoulder");
+224:      const hipH = headingDeg(lh, rh);
+226:      const sep = Math.abs(hipH - shH);
+227:      const c = confFromVis(visAt(sepFrame, ["left_hip", "right_hip", "left_shoulder", "right_shoulder"]));
+233:          value: hipH,
+237:          method: "Heading of the left–right hip line.",
+241:          limitations: "Monocular proxy for pelvis yaw. Not a laboratory Euler angle.",
+242:          howMeasured: "Angle of the hip line in the camera plane.",
+247:          id: "shoulder_orientation",
+248:          label: "Shoulder orientation (apparent)",
+254:          method: "Heading of the left–right shoulder line.",
+258:          limitations: "Monocular proxy for shoulder yaw.",
+259:          howMeasured: "Angle of the shoulder line in the camera plane.",
+264:          id: "hip_shoulder_separation",
+265:          label: "Hip-to-shoulder separation",
+271:          method: "Absolute difference between hip-line and shoulder-line headings.",
+276:          howMeasured: "Difference between pelvis and shoulder line angles at reach-back/plant.",
+280:      out.push(unavailable("hip_shoulder_separation", "Hip-to-shoulder separation", "torso", "Hips or shoulders not visible.", "Both hips and both shoulders required."));
+284:  // Torso tilt (shoulder midpoint vs hip midpoint)
+286:    const lh = jointAt(plantFrame, "left_hip");
+287:    const rh = jointAt(plantFrame, "right_hip");
+288:    const ls = jointAt(plantFrame, "left_shoulder");
+289:    const rs = jointAt(plantFrame, "right_shoulder");
+291:      const hip = { x: (lh.x + rh.x) / 2, y: (lh.y + rh.y) / 2, z: null, visibility: 1 };
+293:      const tilt = headingDeg(hip, sh) + 90; // 0 = upright in image y-down
+302:          ...confFromVis(visAt(plantFrame, ["left_hip", "right_hip", "left_shoulder", "right_shoulder"])),
+303:          method: "Heading of hip-midpoint → shoulder-midpoint vs image vertical.",
+308:          howMeasured: "Spine proxy using mid-hip to mid-shoulder.",
+314:  // Elbow angle at reach-back and at release
+316:    ["elbow_angle_reach_back", "Elbow angle at reach-back", rbFrame],
+317:    ["elbow_angle_release", "Elbow angle at release", releaseFrame],
+332:          value: angleDeg(s, e, w),
+336:          method: "Interior angle shoulder–elbow–wrist.",
+341:          howMeasured: "Angle at the throwing elbow on the named phase frame.",
+345:      out.push(unavailable(id, label, "throwing_arm", "Throwing arm joints not visible.", "Shoulder, elbow, and wrist required."));
+352:    const lh = jointAt(rbFrame, "left_hip");
+353:    const rh = jointAt(rbFrame, "right_hip");
+363:          unit: "× shoulder width",
+365:          ...confFromVis(visAt(rbFrame, [throwWr, "left_hip", "right_hip"])),
+366:          method: "Throwing-wrist to mid-hip distance at maximum reach-back, / shoulder width.",
+371:          howMeasured: "Wrist-to-torso distance at the reach-back peak, in shoulder widths.",
+375:      out.push(unavailable("reach_back_distance", "Reach-back distance", "throwing_arm", "Wrist or hips not visible at reach-back.", "Wrist and hips required."));
+379:  // Arm angle at reach-back (shoulder to wrist vs torso)
+383:    const lh = jointAt(rbFrame, "left_hip");
+384:    const rh = jointAt(rbFrame, "right_hip");
+386:      const midHip = { x: (lh.x + rh.x) / 2, y: (lh.y + rh.y) / 2, z: null, visibility: 1 };
+387:      const v = angleDeg(w, s, midHip);
+390:          id: "arm_angle_reach_back",
+391:          label: "Throwing-arm angle at reach-back",
+396:          ...confFromVis(visAt(rbFrame, [throwSh, throwWr, "left_hip", "right_hip"])),
+397:          method: "Angle wrist–shoulder–mid-hip at reach-back.",
+401:          limitations: "2D angle in the camera plane.",
+442:    const lh = jointAt(releaseFrame, "left_hip");
+443:    const rh = jointAt(releaseFrame, "right_hip");
+453:          unit: "× shoulder width",
+455:          ...confFromVis(visAt(releaseFrame, [throwWr, "left_hip", "right_hip"])),
+456:          method: "Horizontal wrist position relative to mid-hip, signed along inferred throw direction.",
+461:          howMeasured: "How far in front of the hips the wrist is at peak wrist speed.",
+469:  const t1 = frames[frames.length - 1]?.timestampMs ?? 1;
+492:  // Follow-through length
+506:            unit: "× shoulder width",
+509:            method: "Throwing-wrist path length from release to end of follow-through.",
+522:  const hipMs = hipPhase?.peakMs ?? null;
+527:  if (plantMs != null && hipMs != null) {
+530:        id: "plant_to_hip_ms",
+531:        label: "Plant → hip rotation",
+533:        value: hipMs - plantMs,
+536:        confidence: plantPhase!.confidence === "low" || hipPhase!.confidence === "low" ? "low" : "medium",
+537:        confidenceReason: "Interval between detected plant and peak hip-line speed.",
+539:        timestampMs: hipMs,
+542:        howMeasured: "Milliseconds from plant peak to hip-rotation peak.",
+546:  if (hipMs != null && shMs != null) {
+549:        id: "hip_to_shoulder_ms",
+550:        label: "Hip → shoulder rotation",
+552:        value: shMs - hipMs,
+555:        confidence: hipPhase!.confidence === "high" && shPhase!.confidence !== "low" ? "high" : "medium",
+556:        confidenceReason: "Interval between peak hip-line and shoulder-line angular speed.",
+561:        howMeasured: "Milliseconds from hip-rotation peak to shoulder-rotation peak. Negative means the shoulders peaked first.",
+568:        id: "shoulder_to_release_ms",
+569:        label: "Shoulder rotation → release",
+575:        confidenceReason: "Interval between peak shoulder-line speed and peak wrist speed.",
+580:        howMeasured: "Milliseconds from shoulder-rotation peak to release.",
+625:      "hyzer_angle",
+639:    ["plant", "hip_rotation", "plant_to_hip"],
+640:    ["hip_rotation", "shoulder_rotation", "hip_to_shoulder"],
+641:    ["shoulder_rotation", "elbow_extension", "shoulder_to_elbow"],
+666:  const high = usable.filter((m) => m.confidence === "high").length;
+667:  const ratio = usable.length ? high / usable.length : 0;
+669:    return { level: "high", reason: `${high} of ${usable.length} usable metrics have high landmark visibility.` };
+
+===== RELEASE DETECTION SOURCE =====
+9:import { angleDeg, argMax, dist2, finiteDiff, headingDeg, movingAverage } from "./geometry.ts";
+16:  wristX: Array<number | null>;
+17:  wristY: Array<number | null>;
+18:  wristSpeed: Array<number | null>;
+20:  plantAnkleSpeed: Array<number | null>;
+24:  hipSpeed: Array<number | null>;
+25:  shoulderSpeed: Array<number | null>;
+29:  releaseIndex: number | null;
+46:  const wrist = throwType.throwingArm === "right" ? "right_wrist" : "left_wrist";
+49:    const w = jointAt(f, wrist);
+53:  const first = xs.slice(0, Math.max(2, Math.floor(xs.length * 0.25)));
+67:  const wristJ = throwType.throwingArm === "right" ? "right_wrist" : "left_wrist";
+76:  const wristX = frames.map((f) => jointAt(f, wristJ)?.x ?? null);
+77:  const wristY = frames.map((f) => jointAt(f, wristJ)?.y ?? null);
+101:    const w = jointAt(f, wristJ);
+106:  const wristSpeed = movingAverage(
+108:      const a = i > 0 ? jointAt(frames[i - 1]!, wristJ) : null;
+109:      const b = jointAt(f, wristJ);
+115:  const plantAnkleSpeed = movingAverage(
+124:  const hipSpeed = movingAverage(
+128:  const shoulderSpeed = movingAverage(
+133:  const releaseIndex = argMax(wristSpeed);
+136:  if (releaseIndex != null) {
+138:    for (let i = Math.max(0, releaseIndex - Math.round(0.8 / dt)); i < releaseIndex; i++) {
+139:      const spd = plantAnkleSpeed[i];
+148:  if (releaseIndex != null) {
+150:    const start = Math.max(0, (plantIndex ?? 0) - 2);
+151:    for (let i = start; i <= releaseIndex; i++) {
+152:      const x = wristX[i];
+168:    wristX,
+169:    wristY,
+170:    wristSpeed,
+172:    plantAnkleSpeed,
+176:    hipSpeed,
+177:    shoulderSpeed,
+181:    releaseIndex,
+192:  peak: number,
+195:  const s = Math.max(0, Math.min(frames.length - 1, start));
+196:  const e = Math.max(s, Math.min(frames.length - 1, end));
+197:  const p = Math.max(s, Math.min(e, peak));
+203:    peakFrame: frames[p]!.frame,
+206:    peakMs: frames[p]!.timestampMs,
+219:  const rel = kin.releaseIndex ?? Math.round(n * 0.75);
+222:  const hipPeak = argMax(kin.hipSpeed) ?? Math.round((plant + rel) / 2);
+223:  const shPeak = argMax(kin.shoulderSpeed) ?? Math.min(n, hipPeak + 2);
+224:  const setupEnd = Math.max(1, Math.round(plant * 0.25));
+225:  const vis = (seriesOk(kin.wristSpeed) + seriesOk(kin.hipAngle) + seriesOk(kin.plantAnkleX)) / 3;
+235:    if (!throwType.phases.includes(id) && id !== "release") return;
+239:  add("setup", 0, setupEnd, Math.round(setupEnd / 2), "Low wrist speed at start of clip.");
+246:  add("plant", Math.max(0, plant - 2), Math.min(rel, plant + 3), plant, "Front ankle speed minimum before release.");
+248:  add("reach_back", Math.max(setupEnd, rb - 4), Math.min(rel, rb + 2), rb, "Throwing wrist at maximum behind the torso.");
+249:  add("transition", rb, Math.max(rb + 1, hipPeak), rb + 1);
+250:  add("hip_rotation", Math.max(plant, hipPeak - 3), Math.min(rel, hipPeak + 3), hipPeak, "Peak hip-line angular speed.");
+251:  add("shoulder_rotation", Math.max(plant, shPeak - 3), Math.min(rel, shPeak + 3), shPeak, "Peak shoulder-line angular speed.");
+252:  add("arm_acceleration", Math.max(rb, rel - 8), rel, rel);
+253:  add("elbow_extension", Math.max(rb, rel - 6), rel, rel);
+254:  add("release", rel, Math.min(n, rel + 1), rel, "Peak throwing-wrist speed.");
+264:  const preferred = ["release", "plant", "hip_rotation", "reach_back"];
+
+===== GIT STATE =====
+ M package.json
+ M scripts/grok-pwa-shared.mjs
+ M src/lib/app-data/client.server.ts
+?? .diskfish-audit-backups/
+?? .vercel/
+?? audit-reports/
+?? node_modules/
+?? scripts/production-audit.mjs
+
+main
+
+===== EXISTING AUDIT SUMMARY =====
+OVERALL: FAILED
+
+FAILED: lint
+{
+  "name": "lint",
+  "status": "FAILED",
+  "durationMs": 34876,
+  "exitCode": 1,
+  "reason": "npm notice run lint\nnpm notice run eslint ."
+}
+
+FAILED: secret-pattern-scan
+{
+  "name": "secret-pattern-scan",
+  "status": "FAILED",
+  "files": [
+    "scripts/production-audit.mjs"
+  ],
+  "reason": "Potential credential pattern detected. Values are intentionally not printed."
+}
+
+FAILED: disk-fish-analysis-risk-scan
+{
+  "name": "disk-fish-analysis-risk-scan",
+  "status": "FAILED",
+  "findings": [
+    {
+      "severity": "MEDIUM",
+      "type": "angle-wrap",
+      "file": "src/lib/analysis/metrics.ts",
+      "finding": "Raw hip/shoulder angle subtraction detected."
+    },
+    {
+      "severity": "MEDIUM",
+      "type": "metric-label",
+      "file": "src/lib/analysis/metrics.ts",
+      "finding": "Potentially misleading stride-length terminology detected."
+    },
+    {
+      "severity": "HIGH",
+      "type": "release-detection",
+      "file": "src/lib/analysis/phase-detector.ts",
+      "finding": "Global wrist-speed maximum appears to be used as release detection."
+    }
+  ]
+}
+
+==============================================
+ END DIAGNOSTIC
+==============================================

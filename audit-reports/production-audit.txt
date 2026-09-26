@@ -1,0 +1,36 @@
+DISK-FISH SELF-CONTAINED PRODUCTION AUDIT
+=========================================
+
+OVERALL: FAILED
+STARTED: 2026-09-26T16:16:36.523Z
+FINISHED: 2026-09-26T16:18:54.519Z
+
+[UNAVAILABLE] git
+  Reason: git executable unavailable
+
+[BLOCKED] node
+  Reason: Node.js is unavailable
+
+[BLOCKED] package-manager
+  Reason: npm executable unavailable
+  Manager: npm
+
+[PASS] dependency-install
+  Manager: npm
+
+[FAILED] lint
+  Reason: npm notice run lint
+npm notice run eslint .
+
+[PASS] typecheck
+
+[PASS] test
+
+[PASS] build
+
+[FAILED] secret-pattern-scan
+  Reason: Potential credential pattern detected. Values are intentionally not printed.
+  Files:
+    - scripts/production-audit.mjs
+
+[FAILED] disk-fish-analysis-risk-scan

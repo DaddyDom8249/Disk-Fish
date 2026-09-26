@@ -1,0 +1,110 @@
+{
+  "project": "Disk-Fish",
+  "auditVersion": "1.0.0",
+  "startedAt": "2026-09-26T16:16:36.523Z",
+  "finishedAt": "2026-09-26T16:18:54.519Z",
+  "durationMs": 137996,
+  "host": {
+    "platform": "android",
+    "architecture": "arm64",
+    "node": "v26.4.0"
+  },
+  "overall": "FAILED",
+  "packageManager": "npm",
+  "configuredScripts": [
+    "dev",
+    "build",
+    "db:migrate",
+    "build:dev",
+    "preview",
+    "preview:restart",
+    "preview:stop",
+    "typecheck",
+    "check:auth",
+    "test",
+    "lint",
+    "format",
+    "audit"
+  ],
+  "results": [
+    {
+      "name": "git",
+      "status": "UNAVAILABLE",
+      "reason": "git executable unavailable"
+    },
+    {
+      "name": "node",
+      "status": "BLOCKED",
+      "reason": "Node.js is unavailable"
+    },
+    {
+      "name": "package-manager",
+      "status": "BLOCKED",
+      "manager": "npm",
+      "reason": "npm executable unavailable"
+    },
+    {
+      "name": "dependency-install",
+      "status": "PASS",
+      "manager": "npm",
+      "durationMs": 43041
+    },
+    {
+      "name": "lint",
+      "status": "FAILED",
+      "durationMs": 22796,
+      "exitCode": 1,
+      "reason": "npm notice run lint\nnpm notice run eslint ."
+    },
+    {
+      "name": "typecheck",
+      "status": "PASS",
+      "durationMs": 32883,
+      "exitCode": 0
+    },
+    {
+      "name": "test",
+      "status": "PASS",
+      "durationMs": 16104,
+      "exitCode": 0
+    },
+    {
+      "name": "build",
+      "status": "PASS",
+      "durationMs": 23054,
+      "exitCode": 0
+    },
+    {
+      "name": "secret-pattern-scan",
+      "status": "FAILED",
+      "files": [
+        "scripts/production-audit.mjs"
+      ],
+      "reason": "Potential credential pattern detected. Values are intentionally not printed."
+    },
+    {
+      "name": "disk-fish-analysis-risk-scan",
+      "status": "FAILED",
+      "findings": [
+        {
+          "severity": "MEDIUM",
+          "type": "angle-wrap",
+          "file": "src/lib/analysis/metrics.ts",
+          "finding": "Raw hip/shoulder angle subtraction detected."
+        },
+        {
+          "severity": "MEDIUM",
+          "type": "metric-label",
+          "file": "src/lib/analysis/metrics.ts",
+          "finding": "Potentially misleading stride-length terminology detected."
+        },
+        {
+          "severity": "HIGH",
+          "type": "release-detection",
+          "file": "src/lib/analysis/phase-detector.ts",
+          "finding": "Global wrist-speed maximum appears to be used as release detection."
+        }
+      ]
+    }
+  ]
+}
