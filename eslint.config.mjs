@@ -12,6 +12,7 @@ export default tseslint.config(
       "dist/**",
       ".output/**",
       ".vercel/**",
+      ".diskfish-audit-backups/**",
       ".nitro/**",
       "node_modules/**",
       "src/routeTree.gen.ts",
