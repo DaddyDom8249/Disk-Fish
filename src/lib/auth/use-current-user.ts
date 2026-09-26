@@ -56,6 +56,10 @@ export type CurrentUserState = {
  */
 export function useCurrentUserState(): CurrentUserState {
   if (!authEnabled) return { user: DEV_USER, isPending: false };
+  // authEnabled is a module-level constant fixed for the lifetime of the app.
+  // The conditional is intentional: calling useSession() when auth is disabled
+  // would perform an unnecessary auth request in the shipped dev configuration.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const { data, isPending } = authClient.useSession();
   const user = data?.user;
   return {
